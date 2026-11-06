@@ -16,10 +16,20 @@ type Props = {
 function useKeys() {
   const keys = useRef<Record<string, boolean>>({});
   useEffect(() => {
-    const d = (e: KeyboardEvent) => (keys.current[e.key.toLowerCase()] = true);
-    const u = (e: KeyboardEvent) => (keys.current[e.key.toLowerCase()] = false);
-    addEventListener('keydown', d); addEventListener('keyup', u);
-    return () => { removeEventListener('keydown', d); removeEventListener('keyup', u); };
+    const d = (e: KeyboardEvent) => { keys.current[e.key.toLowerCase()] = true; };
+    const u = (e: KeyboardEvent) => { keys.current[e.key.toLowerCase()] = false; };
+    const clear = () => { keys.current = {}; };
+    const onVis = () => { if (document.visibilityState === 'hidden') clear(); };
+    addEventListener('keydown', d);
+    addEventListener('keyup', u);
+    addEventListener('blur', clear);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      removeEventListener('keydown', d);
+      removeEventListener('keyup', u);
+      removeEventListener('blur', clear);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
   return keys;
 }
@@ -46,7 +56,8 @@ function Mover({ me, setMe }: Pick<Props, 'me' | 'setMe'>) {
     pos.current.x = Math.max(-14, Math.min(14, pos.current.x + dx));
     pos.current.z = Math.max(-4, Math.min(8, pos.current.z + dz));
     const now = performance.now();
-    if (now - last.current > 50 && (moving || me.status !== 'active')) {
+    // Standing still must not flip an idle avatar back to active.
+    if (moving && now - last.current > 50) {
       last.current = now; setMe({ ...pos.current, status: 'active' });
     }
   });
@@ -55,7 +66,7 @@ function Mover({ me, setMe }: Pick<Props, 'me' | 'setMe'>) {
 
 export function Scene({ me, setMe, others, multipliers, credits, setCredits, onWin }: Props) {
   // "Hot machine" = how many avatars are standing near each storefront
-  const crowd = (bx: number) => [me, ...others].filter((p) => Math.abs(p.x - bx) < 2.5 && p.z < -1).length;
+  const crowd = (bx: number) => [me, ...others].filter((p) => p.status !== 'offline' && Math.abs(p.x - bx) < 2.5 && p.z < -1).length;
   const [, force] = useState(0);
   useEffect(() => { const t = setInterval(() => force((n) => n + 1), 1000); return () => clearInterval(t); }, []);
   return (
@@ -74,7 +85,7 @@ export function Scene({ me, setMe, others, multipliers, credits, setCredits, onW
           <Text position={[0, 5.4, 1.6]} fontSize={0.5} color="#fff">{`${b.name}${crowd(b.x) > 1 ? ' 🔥' : ''}`}</Text>
           {i === 0 ? (
             <Html position={[0, 2.4, 1.55]} transform distanceFactor={6} style={{ pointerEvents: 'auto' }}>
-              <SlotMachine name={b.name} multiplier={multipliers[b.id] ?? 1} credits={credits} setCredits={setCredits} onWin={(a) => onWin(b.name, a)} />
+              <SlotMachine name={b.name} multiplier={multipliers[b.id] ?? 1} credits={credits} setCredits={setCredits} onWin={(a) => onWin(b.id, a)} />
             </Html>
           ) : (
             <mesh position={[0, 2.4, 1.51]}><planeGeometry args={[2.4, 2.4]} /><meshStandardMaterial color="#111" /></mesh>

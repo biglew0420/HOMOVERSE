@@ -9,7 +9,7 @@ const MAX = (SIZE - KNOB) / 2;
 export function TouchJoystick() {
   const base = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
-  const active = useRef(false);
+  const pointerId = useRef<number | null>(null);
 
   const setVec = useCallback((dx: number, dy: number) => {
     const len = Math.hypot(dx, dy) || 1;
@@ -23,7 +23,7 @@ export function TouchJoystick() {
   }, []);
 
   const end = useCallback(() => {
-    active.current = false;
+    pointerId.current = null;
     setKnob({ x: 0, y: 0 });
     moveInput.x = 0;
     moveInput.z = 0;
@@ -31,11 +31,14 @@ export function TouchJoystick() {
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      if (!active.current || !base.current) return;
+      if (pointerId.current !== e.pointerId || !base.current) return;
       const r = base.current.getBoundingClientRect();
       setVec(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
     };
-    const onUp = () => end();
+    const onUp = (e: PointerEvent) => {
+      if (pointerId.current !== e.pointerId) return;
+      end();
+    };
     addEventListener('pointermove', onMove);
     addEventListener('pointerup', onUp);
     addEventListener('pointercancel', onUp);
@@ -50,8 +53,9 @@ export function TouchJoystick() {
     <div
       ref={base}
       onPointerDown={(e) => {
+        if (pointerId.current != null) return;
         e.preventDefault();
-        active.current = true;
+        pointerId.current = e.pointerId;
         base.current?.setPointerCapture?.(e.pointerId);
         const r = e.currentTarget.getBoundingClientRect();
         setVec(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
