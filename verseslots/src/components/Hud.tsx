@@ -102,11 +102,11 @@ export function Hud(props: Props) {
         data-movement-locked={props.movementLocked ? 'yes' : 'no'}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-          <b style={{ color: '#d4af37', fontSize: 16, letterSpacing: 1 }}>HOMO</b>
-          <span data-testid="credits">Demo credits: {props.credits}</span>
+          <b style={{ color: '#d4af37', fontSize: 16, letterSpacing: 1 }}>HOMOVERSE</b>
+          <span data-testid="credits">DEMO CREDITS: {props.credits}</span>
         </div>
         <div data-testid="disclaimer" style={{ color: '#f6edd6' }}>
-          Demo credits are not HOMO tokens. No cash value. Not purchasable, transferable, or redeemable.
+          Demo credits are not HOMO tokens. No cash value, no prizes, no cashout. Not purchasable, transferable, or redeemable.
         </div>
         <div style={{ opacity: 0.9 }}>{props.online} · {props.here} here · synthetic, not photoreal</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
@@ -134,7 +134,7 @@ export function Hud(props: Props) {
           <button type="button" style={button} data-testid="reset-demo" onClick={props.onReset}>Reset local demo</button>
         </div>
         <div data-testid="area-notice" data-geo={props.geoStatus}>{notice}</div>
-        <div style={{ opacity: 0.9 }}>On this device only. Not an account. {props.wins[0] ? `Last demo win +${props.wins[0].amount}` : 'No demo wins yet.'}</div>
+        <div style={{ opacity: 0.9 }}>On this device only. Not an account. {props.wins[0] ? `Last demo win +${props.wins[0].amount} demo credits` : 'No demo wins yet.'}</div>
         <span data-testid="player-pos" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>{props.pos.x.toFixed(2)},{props.pos.z.toFixed(2)}</span>
         <span data-testid="district-signature" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>{props.districtSignature}</span>
         <span data-testid="avatar-applied" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>{props.avatar.outfit}</span>

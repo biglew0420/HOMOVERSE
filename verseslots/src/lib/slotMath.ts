@@ -1,5 +1,7 @@
 /** Demo paytable. Stake is 1. Every number here is what a spin can actually add. Not certified math. */
 export const DEMO_STAKE = 1;
+/** Default (and currently only) slot cabinet design: the pass-4 Gold Seahorse look. */
+export const DEFAULT_SLOT_DESIGN = 'Gold Seahorse';
 export const SYMBOL_IDS = ['seahorse', 'hmark', 'jewel', 'arch', 'medallion'] as const;
 export type SymbolId = (typeof SYMBOL_IDS)[number];
 

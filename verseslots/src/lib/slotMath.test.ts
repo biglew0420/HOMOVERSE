@@ -40,3 +40,10 @@ describe('demo slot math', () => {
     expect([...seen].every((id) => ['seahorse', 'hmark', 'jewel', 'arch', 'medallion'].includes(id))).toBe(true);
   });
 });
+
+describe('release defaults', () => {
+  it('uses the Gold Seahorse design as the default slot', async () => {
+    const { DEFAULT_SLOT_DESIGN } = await import('./slotMath');
+    expect(DEFAULT_SLOT_DESIGN).toBe('Gold Seahorse');
+  });
+});

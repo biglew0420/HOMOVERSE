@@ -5,6 +5,7 @@ import {
   drawReels,
   resolveDemoSpin,
   type SymbolId,
+  DEFAULT_SLOT_DESIGN,
 } from '../lib/slotMath';
 import { SlotSymbol } from './slot/Symbols';
 
@@ -46,7 +47,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       setResult(`Sample only. Balance unchanged. ${resolved.detail}`);
       return;
     }
-    setResult(resolved.amount > 0 ? `Demo win +${resolved.amount}. ${resolved.detail}` : 'No win');
+    setResult(resolved.amount > 0 ? `Demo win +${resolved.amount} demo credits. ${resolved.detail}` : 'No win');
     if (resolved.amount > 0) onPayout(resolved.amount);
   };
 
@@ -231,12 +232,12 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       `}</style>
       <div className="topbar">
         <button type="button" className="ghost" data-testid="close-slot" onClick={onClose}>Close and walk</button>
-        <span data-testid="credits">Demo credits: {credits}</span>
+        <span data-testid="credits">DEMO CREDITS: {credits}</span>
       </div>
       <div className="brandrow">
-        <span className="brand">HOMO</span>
-        <span>Gold Seahorse</span>
-        <span>Stake {DEMO_STAKE}</span>
+        <span className="brand">HOMOVERSE</span>
+        <span data-testid="slot-design">{DEFAULT_SLOT_DESIGN}</span>
+        <span>Stake {DEMO_STAKE} demo credit</span>
       </div>
       <div className="paytable" data-testid="paytable" aria-label="Demo paytable">
         {PAYTABLE.map((line) => (
@@ -274,7 +275,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
         </button>
       </div>
       <p className="rules" data-testid="disclaimer">
-        Demo credits are not HOMO tokens. No cash value. Not purchasable, transferable, or redeemable.
+        Demo credits are not HOMO tokens. No cash value, no prizes, no cashout. Not purchasable, transferable, or redeemable.
         {credits < DEMO_STAKE ? ' No demo credits left. Reset the local demo for another free grant.' : ' Odds are a placeholder, not certified math.'}
         <span data-testid="low-balance" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>{credits < DEMO_STAKE ? 'empty' : 'ok'}</span>
       </p>
