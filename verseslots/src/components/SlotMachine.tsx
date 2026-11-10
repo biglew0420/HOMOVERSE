@@ -77,7 +77,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
   const symbolSize = reduced ? 88 : 104;
 
   return (
-    <div className={`cabinet ${feature !== 'off' ? 'feature' : ''}`} data-testid="slot-sheet" data-feature={feature} data-reduced={reduced ? 'yes' : 'no'}>
+    <div className={`cabinet ${feature !== 'off' ? 'feature' : ''}`} data-testid="slot-sheet" data-feature={feature} data-reduced={reduced ? 'yes' : 'no'} style={{ ['--mark' as string]: `${symbolSize}px` }}>
       <style>{`
         .cabinet {
           position: fixed; inset: 0; z-index: 60; box-sizing: border-box; color: #f6edd6;
@@ -86,7 +86,9 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
           grid-template-rows: auto auto auto minmax(140px, 1fr) auto auto auto auto auto;
           gap: 8px; padding: max(8px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
           background:
-            radial-gradient(120% 80% at 50% 0%, #3a301c 0%, #0c0b09 42%, #050504 100%);
+            linear-gradient(118deg, transparent 0 36%, rgba(255,248,230,.16) 41%, rgba(255,255,255,.03) 45%, transparent 52%),
+            radial-gradient(70% 28% at 22% 0%, rgba(255,244,214,.16), transparent 60%),
+            radial-gradient(90% 70% at 80% 110%, #1a1612, #050504 62%);
           overflow: auto;
         }
         .cabinet.feature { box-shadow: inset 0 0 0 3px #e7c878, inset 0 0 80px rgba(231, 200, 120, 0.18); }
@@ -96,11 +98,23 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
         .topbar, .brandrow, .feature-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .brand { font-weight: 700; letter-spacing: 2px; color: #f0d78c; font-size: 18px; }
         .paytable { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .panel, .reel, .spin, .ghost {
+          border: 1.5px solid transparent;
+          background-origin: border-box;
+          background-clip: padding-box, border-box;
+        }
+        .metal {
+          background-image:
+            linear-gradient(#100e0b, #100e0b),
+            linear-gradient(128deg, #2a1c08 0%, #8d6a2a 16%, #fff6d4 34%, #a9782c 46%, #fff1c2 52%, #5c4012 68%, #e7c56a 82%, #24180a 100%);
+        }
         .panel {
           min-height: 58px; border-radius: 12px; padding: 6px 6px 7px; text-align: center;
-          background: linear-gradient(180deg, #3a3120, #100e0b 48%, #1c1812);
-          border: 1px solid #e7c878;
-          box-shadow: inset 0 1px 0 #fff4d0, inset 0 -10px 14px #000, 0 3px 0 #5c4516;
+          background-color: #0c0b09;
+          background-image:
+            linear-gradient(180deg, rgba(255,248,230,.07), transparent 28%, #0c0b09 70%),
+            linear-gradient(128deg, #2a1c08 0%, #8d6a2a 16%, #fff6d4 34%, #a9782c 46%, #fff1c2 52%, #5c4012 68%, #e7c56a 82%, #24180a 100%);
+          box-shadow: inset 0 10px 16px rgba(255,244,220,.05), inset 0 -16px 18px #000, 0 8px 14px rgba(0,0,0,.55);
         }
         .panel strong { display: block; font-size: 20px; line-height: 1.1; color: #fff6d8; }
         .panel span { display: block; font-size: 11px; letter-spacing: 0.4px; color: #f6edd6; }
@@ -108,21 +122,39 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
         .reels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-height: 0; }
         .reel {
           position: relative; min-height: 132px; border-radius: 18px; overflow: hidden;
-          display: flex; align-items: center; justify-content: center;
-          background: radial-gradient(circle at 50% 18%, #4a3e28, #090807 70%);
-          border: 2px solid #e7c878;
-          box-shadow: inset 0 1px 0 #fff1c9, inset 0 -16px 22px #000, 0 8px 14px #000;
+          display: flex; padding: 7px;
+          background-color: #14110c;
+          background-image:
+            linear-gradient(#14110c, #14110c),
+            linear-gradient(128deg, #2a1c08 0%, #8d6a2a 16%, #fff6d4 34%, #a9782c 46%, #fff1c2 52%, #5c4012 68%, #e7c56a 82%, #24180a 100%);
+          box-shadow: 0 12px 18px rgba(0,0,0,.55);
         }
+        .well {
+          position: relative; flex: 1; border-radius: 12px; overflow: hidden;
+          display: flex; align-items: center; justify-content: center;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,.05), transparent 18%),
+            radial-gradient(ellipse at 50% 42%, #221c16, #070605 72%);
+          box-shadow: inset 0 16px 22px rgba(0,0,0,.82), inset 0 -12px 16px rgba(0,0,0,.72), inset 0 0 0 1px rgba(0,0,0,.65);
+        }
+        .well .lit-mark { filter: drop-shadow(0 10px 5px rgba(0,0,0,.72)) drop-shadow(0 2px 1px rgba(0,0,0,.9)); height: var(--mark, 104px); width: auto; }
         .reel::after {
-          content: ""; position: absolute; inset: 0; pointer-events: none;
-          background: linear-gradient(180deg, rgba(255,255,255,.28), transparent 36%, rgba(0,0,0,.4));
+          content: ""; position: absolute; inset: 7px; border-radius: 12px; pointer-events: none;
+          background: linear-gradient(180deg, rgba(255,255,255,.16), transparent 22%, transparent 70%, rgba(0,0,0,.35));
         }
         .spinwrap { display: flex; justify-content: center; }
         .spin {
           width: 128px; height: 128px; border-radius: 50%; padding: 0;
-          border: 6px solid #e7c878; color: #fff8e8; font-size: 18px; font-weight: 700; letter-spacing: 1px;
-          background: radial-gradient(circle at 50% 28%, #4a3d24, #0b0a08 68%);
-          box-shadow: 0 10px 0 #5a4316, inset 0 2px 0 #fff1c9, 0 14px 22px #000;
+          color: #fff8e8; font-size: 18px; font-weight: 700; letter-spacing: 1px;
+          background-color: #0c0b09;
+          background-image:
+            radial-gradient(circle at 50% 22%, rgba(255,248,230,.2), transparent 36%),
+            radial-gradient(circle at 50% 30%, #2a2418, #070605 68%),
+            linear-gradient(128deg, #2a1c08 0%, #8d6a2a 16%, #fff6d4 34%, #a9782c 46%, #fff1c2 52%, #5c4012 68%, #e7c56a 82%, #24180a 100%);
+          background-origin: padding-box, padding-box, border-box;
+          background-clip: padding-box, padding-box, border-box;
+          border: 7px solid transparent;
+          box-shadow: 0 10px 0 #3a2a10, 0 16px 22px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,248,230,.35);
           touch-action: manipulation;
         }
         .spin:disabled { opacity: 0.45; box-shadow: none; }
@@ -156,7 +188,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
           .panel strong { font-size: 15px; }
           .spin { width: 88px; height: 88px; }
           .reel { min-height: 0; }
-          .reel svg { width: auto; height: 76px; max-height: none; }
+          .reel .lit-mark { height: 76px; }
           .rules, .feature-line, .result { font-size: 12px; line-height: 1.25; }
           .sample { min-height: 32px; }
         }
@@ -175,7 +207,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
             grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
           }
           .paytable { grid-template-columns: 1fr 1fr; }
-          .reel svg { height: 168px; }
+          .reel .lit-mark { height: 168px; }
           .spin { width: 148px; height: 148px; font-size: 20px; }
           .panel strong { font-size: 26px; }
         }
@@ -200,7 +232,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       <div className="reels" data-testid="spin-reels" data-symbols={reels.join(',')}>
         {reels.map((id, index) => (
           <div className="reel" key={`${id}-${index}`} aria-hidden={spinning}>
-            <SlotSymbol id={id} size={symbolSize} />
+            <div className="well"><SlotSymbol id={id} size={symbolSize} /></div>
           </div>
         ))}
       </div>
