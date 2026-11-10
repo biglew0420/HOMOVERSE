@@ -42,7 +42,7 @@ Use a phone-sized window or the browser’s device toolbar (portrait and landsca
 
 ## Quality limits
 
-This is not photoreal. Slot symbols are original drawings shaded in the browser from a height field (key light, specular, and a darker underside). The cabinet is CSS lacquer: a thin studio streak, a gold edge with a bright band, and reel wells with inset shadow. It is not a photograph, a path-traced render, or any commercial game's art. The street has no photographic texture set, no HDRI, no real glass refraction, and no photogrammetry. Trees, hedges, and the body are smooth procedural meshes. Shadows are a single map. See `ASSETS.md`.
+This is not photoreal. Slot symbols are original drawings shaded in the browser from a height field (key light, specular, and a darker underside). The seahorse is a sculpted side view with a snout, coronet, dorsal fin, belly ridges, and a curled tail. The cabinet is CSS lacquer: a soft vignette, a gold edge, and reel wells with inset shadow. A short reel blur plays during a spin and is skipped when reduced motion is on. It is not a photograph, a path-traced render, or any commercial game's art. The street has no photographic texture set, no HDRI, no real glass refraction, and no photogrammetry. Trees, hedges, and the body are smooth procedural meshes. Shadows are a single map. See `ASSETS.md`.
 
 ## Safeguards
 

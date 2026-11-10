@@ -86,12 +86,13 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
           grid-template-rows: auto auto auto minmax(140px, 1fr) auto auto auto auto auto;
           gap: 8px; padding: max(8px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
           background:
-            linear-gradient(118deg, transparent 0 36%, rgba(255,248,230,.16) 41%, rgba(255,255,255,.03) 45%, transparent 52%),
-            radial-gradient(70% 28% at 22% 0%, rgba(255,244,214,.16), transparent 60%),
-            radial-gradient(90% 70% at 80% 110%, #1a1612, #050504 62%);
+            radial-gradient(120% 90% at 50% 42%, transparent 46%, rgba(0,0,0,.55) 100%),
+            linear-gradient(102deg, transparent 0 28%, rgba(255,236,200,.07) 46%, transparent 62%),
+            radial-gradient(80% 24% at 18% 0%, rgba(255,244,214,.12), transparent 70%),
+            #070605;
           overflow: auto;
         }
-        .cabinet.feature { box-shadow: inset 0 0 0 3px #e7c878, inset 0 0 80px rgba(231, 200, 120, 0.18); }
+        .cabinet.feature { box-shadow: inset 0 0 0 2px #c9a35a, inset 0 0 70px rgba(201, 163, 90, 0.16); }
         .topbar { grid-area: top; } .brandrow { grid-area: brand; } .paytable { grid-area: pay; }
         .reels { grid-area: reels; } .feature-line { grid-area: feature; } .result { grid-area: result; }
         .spinwrap { grid-area: spin; } .rules { grid-area: rules; } .sample { grid-area: sample; }
@@ -109,16 +110,23 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
             linear-gradient(128deg, #2a1c08 0%, #8d6a2a 16%, #fff6d4 34%, #a9782c 46%, #fff1c2 52%, #5c4012 68%, #e7c56a 82%, #24180a 100%);
         }
         .panel {
-          min-height: 58px; border-radius: 12px; padding: 6px 6px 7px; text-align: center;
+          position: relative;
+          min-height: 58px; border-radius: 12px; padding: 8px 6px 7px; text-align: center;
           background-color: #0c0b09;
           background-image:
-            linear-gradient(180deg, rgba(255,248,230,.07), transparent 28%, #0c0b09 70%),
-            linear-gradient(128deg, #2a1c08 0%, #8d6a2a 16%, #fff6d4 34%, #a9782c 46%, #fff1c2 52%, #5c4012 68%, #e7c56a 82%, #24180a 100%);
-          box-shadow: inset 0 10px 16px rgba(255,244,220,.05), inset 0 -16px 18px #000, 0 8px 14px rgba(0,0,0,.55);
+            linear-gradient(#12100c, #070605),
+            linear-gradient(160deg, #4a3514, #f6e2a8 38%, #8a6420 52%, #fff6d0 68%, #3a280c);
+          box-shadow: inset 0 -12px 14px rgba(0,0,0,.55), 0 6px 10px rgba(0,0,0,.4);
         }
-        .panel strong { display: block; font-size: 20px; line-height: 1.1; color: #fff6d8; }
+        .panel .sheen {
+          position: absolute; left: 12px; right: 42%; top: 5px; height: 4px; border-radius: 4px;
+          background: linear-gradient(90deg, transparent, rgba(255,248,220,.75), transparent);
+          pointer-events: none;
+        }
+        .panel strong, .panel span { position: relative; z-index: 1; text-shadow: 0 1px 1px #000; }
+        .panel strong { display: block; font-size: 20px; line-height: 1.1; color: #fffaf0; }
         .panel span { display: block; font-size: 11px; letter-spacing: 0.4px; color: #f6edd6; }
-        .panel.active { outline: 2px solid #fff6d8; box-shadow: inset 0 0 18px rgba(240, 215, 140, 0.45), 0 0 16px rgba(231, 200, 120, 0.35); }
+        .panel.active { outline: 2px solid #fff6d8; outline-offset: 1px; }
         .reels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-height: 0; }
         .reel {
           position: relative; min-height: 132px; border-radius: 18px; overflow: hidden;
@@ -157,7 +165,16 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
           box-shadow: 0 10px 0 #3a2a10, 0 16px 22px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,248,230,.35);
           touch-action: manipulation;
         }
-        .spin:disabled { opacity: 0.45; box-shadow: none; }
+        .spin:active:not(:disabled), .spin[data-pressed="true"] {
+          transform: translateY(8px);
+          box-shadow: 0 2px 0 #3a2a10, 0 5px 8px rgba(0,0,0,.5);
+        }
+        .spin:disabled { opacity: 0.45; box-shadow: none; transform: none; }
+        .well.spinning .lit-mark { animation: reelSlip 120ms linear infinite; }
+        @keyframes reelSlip {
+          from { transform: translateY(-14%); filter: blur(5px); }
+          to { transform: translateY(16%); filter: blur(6px); }
+        }
         .spin:focus-visible, .textbtn:focus-visible, .ghost:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
         .rules { display: block; font-size: 13px; line-height: 1.35; color: #f6edd6; }
         .result { min-height: 2.6em; font-size: 15px; color: #fff8e8; }
@@ -167,7 +184,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
         }
         .textbtn { background: transparent; border: none; color: #f0d78c; text-decoration: underline; min-height: 44px; }
         @media (prefers-reduced-motion: reduce) {
-          .reel, .spin { transition: none; }
+          .reel, .spin, .well.spinning .lit-mark { animation: none; transition: none; filter: none; }
         }
         @media (orientation: landscape) and (max-height: 520px) {
           .cabinet {
@@ -224,6 +241,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       <div className="paytable" data-testid="paytable" aria-label="Demo paytable">
         {PAYTABLE.map((line) => (
           <div key={line.id} className={`panel ${feature !== 'off' && line.id === 'seahorse' ? 'active' : ''}`}>
+            <i className="sheen" aria-hidden="true" />
             <strong>{line.multiplier}×</strong>
             <span>{line.label}</span>
           </div>
@@ -232,7 +250,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       <div className="reels" data-testid="spin-reels" data-symbols={reels.join(',')}>
         {reels.map((id, index) => (
           <div className="reel" key={`${id}-${index}`} aria-hidden={spinning}>
-            <div className="well"><SlotSymbol id={id} size={symbolSize} /></div>
+            <div className={`well ${spinning && !reduced ? 'spinning' : ''}`}><SlotSymbol id={id} size={symbolSize} /></div>
           </div>
         ))}
       </div>
@@ -247,6 +265,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
           type="button"
           className="spin"
           data-testid="spin-button"
+          data-pressed={spinning ? 'true' : 'false'}
           onClick={spin}
           disabled={spinning || credits < DEMO_STAKE}
           aria-label={credits < DEMO_STAKE ? 'Spin unavailable, no demo credits' : 'Spin one demo credit'}

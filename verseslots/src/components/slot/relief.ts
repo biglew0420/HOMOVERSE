@@ -89,56 +89,90 @@ function shade(source: HTMLCanvasElement): HTMLCanvasElement {
   return lit;
 }
 
+function seahorseFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const s = Math.min(w, h) / 250;
+  ctx.translate((w - 220 * s) / 2, (h - 250 * s) / 2);
+  ctx.scale(s, s);
+}
+
 function paintSeahorse(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
-  const s = Math.min(w, h) / 210;
-  ctx.translate((w - 190 * s) / 2, (h - 210 * s) / 2);
-  ctx.scale(s, s);
-  ctx.lineCap = 'round';
+  seahorseFrame(ctx, w, h);
   ctx.lineJoin = 'round';
-  const body = new Path2D('M156 62 C112 50 78 88 96 124 C114 162 86 196 54 184 C24 172 30 142 56 150');
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = 40;
-  ctx.stroke(body);
+  ctx.lineCap = 'round';
+  ctx.fillStyle = 'rgba(255,255,255,0.78)';
+  ctx.beginPath();
+  ctx.moveTo(188, 62);
+  ctx.quadraticCurveTo(206, 74, 184, 82);
+  ctx.quadraticCurveTo(166, 92, 154, 78);
+  ctx.bezierCurveTo(148, 108, 170, 140, 150, 168);
+  ctx.bezierCurveTo(136, 196, 100, 214, 78, 196);
+  ctx.bezierCurveTo(48, 174, 42, 142, 74, 138);
+  ctx.bezierCurveTo(98, 134, 86, 168, 68, 166);
+  ctx.bezierCurveTo(50, 164, 58, 140, 80, 146);
+  ctx.bezierCurveTo(62, 120, 70, 86, 98, 64);
+  ctx.quadraticCurveTo(118, 42, 142, 40);
+  ctx.quadraticCurveTo(160, 28, 168, 48);
+  ctx.quadraticCurveTo(176, 42, 188, 62);
+  ctx.closePath();
+  ctx.fill();
   ctx.strokeStyle = 'white';
-  ctx.lineWidth = 16;
-  ctx.stroke(body);
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.moveTo(168, 68);
+  ctx.bezierCurveTo(150, 110, 156, 148, 124, 176);
+  ctx.stroke();
   ctx.fillStyle = 'white';
   ctx.beginPath();
-  ctx.ellipse(132, 58, 26, 22, -0.5, 0, Math.PI * 2);
+  ctx.ellipse(156, 58, 24, 18, -0.35, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(162, 66, 22, 9, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(186, 66, 24, 7.5, -0.2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.moveTo(112, 36);
-  ctx.lineTo(118, 14);
-  ctx.moveTo(128, 32);
-  ctx.lineTo(140, 10);
-  ctx.moveTo(144, 34);
-  ctx.lineTo(158, 16);
+  ctx.moveTo(136, 40);
+  ctx.lineTo(128, 16);
+  ctx.moveTo(150, 34);
+  ctx.lineTo(152, 10);
+  ctx.moveTo(164, 36);
+  ctx.lineTo(176, 14);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillStyle = 'rgba(255,255,255,0.62)';
   ctx.beginPath();
-  ctx.ellipse(108, 112, 18, 11, 0.9, 0, Math.PI * 2);
+  ctx.moveTo(108, 88);
+  ctx.lineTo(76, 72);
+  ctx.lineTo(84, 98);
+  ctx.lineTo(70, 112);
+  ctx.lineTo(92, 122);
+  ctx.lineTo(78, 140);
+  ctx.lineTo(112, 150);
+  ctx.closePath();
   ctx.fill();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+  ctx.lineWidth = 2.4;
+  for (let i = 0; i < 5; i++) {
+    const y = 112 + i * 13;
+    ctx.beginPath();
+    ctx.moveTo(124, y);
+    ctx.quadraticCurveTo(146, y + 5, 166, y - 1);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
 function finishSeahorse(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const s = Math.min(w, h) / 210;
   ctx.save();
-  ctx.translate((w - 190 * s) / 2, (h - 210 * s) / 2);
-  ctx.scale(s, s);
-  ctx.fillStyle = '#120e08';
+  seahorseFrame(ctx, w, h);
+  ctx.fillStyle = '#140e08';
   ctx.beginPath();
-  ctx.arc(140, 54, 5.2, 0, Math.PI * 2);
+  ctx.arc(164, 54, 5.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#fffaf0';
   ctx.beginPath();
-  ctx.arc(142, 52, 1.8, 0, Math.PI * 2);
+  ctx.arc(166, 52, 1.8, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
