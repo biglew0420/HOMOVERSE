@@ -8,7 +8,7 @@ export function haversine(lat1: number, lng1: number, lat2: number, lng2: number
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 export const distanceToBuilding = (lat: number, lng: number, b: Building) => haversine(lat, lng, b.lat, b.lng);
-/** Stub: 2x within 50m, 1.5x within 200m, else 1x (remote play). */
+/** Legacy stub. The walking prototype does not pay this bonus. */
 export function proximityMultiplier(meters: number | null) {
   if (meters == null) return 1;
   if (meters <= 50) return 2;

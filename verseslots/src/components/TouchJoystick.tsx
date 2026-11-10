@@ -1,26 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { moveInput } from '../lib/moveInput';
 
-const SIZE = 112;
 const KNOB = 48;
-const MAX = (SIZE - KNOB) / 2;
 
 /** Bottom-left on-screen stick. Analog x/z feeds the same moveInput WASD uses. */
-export function TouchJoystick() {
+export function TouchJoystick({ disabled = false, size = 112 }: { disabled?: boolean; size?: number }) {
   const base = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const pointerId = useRef<number | null>(null);
+  const max = (size - KNOB) / 2;
 
   const setVec = useCallback((dx: number, dy: number) => {
     const len = Math.hypot(dx, dy) || 1;
-    const clamped = Math.min(len, MAX);
+    const clamped = Math.min(len, max);
     const nx = (dx / len) * clamped;
     const ny = (dy / len) * clamped;
     setKnob({ x: nx, y: ny });
     // screen up → -z (forward), screen right → +x
-    moveInput.x = nx / MAX;
-    moveInput.z = ny / MAX;
-  }, []);
+    moveInput.x = nx / max;
+    moveInput.z = ny / max;
+  }, [max]);
 
   const end = useCallback(() => {
     pointerId.current = null;
@@ -49,11 +48,15 @@ export function TouchJoystick() {
     };
   }, [end, setVec]);
 
+  useEffect(() => {
+    if (disabled) end();
+  }, [disabled, end]);
+
   return (
     <div
       ref={base}
       onPointerDown={(e) => {
-        if (pointerId.current != null) return;
+        if (disabled || pointerId.current != null) return;
         e.preventDefault();
         pointerId.current = e.pointerId;
         base.current?.setPointerCapture?.(e.pointerId);
@@ -62,10 +65,11 @@ export function TouchJoystick() {
       }}
       style={{
         position: 'fixed',
-        left: 16,
-        bottom: 16,
-        width: SIZE,
-        height: SIZE,
+        left: 'max(12px, env(safe-area-inset-left))',
+        bottom: 'max(12px, env(safe-area-inset-bottom))',
+        width: size,
+        height: size,
+        opacity: disabled ? 0.35 : 1,
         borderRadius: '50%',
         background: 'rgba(0,0,0,0.45)',
         border: '2px solid rgba(212,175,55,0.55)',

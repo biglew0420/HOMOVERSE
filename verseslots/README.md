@@ -1,80 +1,69 @@
-# VerseSlots (working name)
+# VerseSlots prototype
 
-A geo/GPS-based virtual mall metaverse, living in this HOMOVERSE repo under `verseslots/`. Walk a digital version of your town's walking mall, see other players' avatars with their status, and play a slot machine on a storefront. You can play remotely from anywhere. Players who are physically near a real storefront get a bonus multiplier.
+Local browser prototype of an open-air pedestrian district for HOMOVERSE. You can walk a promenade and plaza, change a stylized avatar, and spin a slot for demo credits. It runs with no account and no location permission.
 
-> **Play money only.** The odds and payouts are placeholders. This demo does not take real money, tokens, or deposits, and it does not promise winnings. Real-money or token-based gambling would require licensing and legal review in each jurisdiction and is not part of this package.
+The district is **procedural and synthetic**. It is not a scan of a real mall, not a map, and not directions. Storefront names are fictional labels.
 
-## Stack
-Vite + React + TypeScript · React Three Fiber + drei · Liveblocks (presence + broadcast) · Vercel
+> **Demo credits are not HOMO tokens.** They are simulated play money, granted automatically. They have no cash value and cannot be bought, transferred, or redeemed. This build has no wallet, no token balance, no purchase, and no wagering of anything with real value.
 
-## Architecture
-- **Scene** (`src/components/Scene.tsx`): the street, 4 storefront boxes, and WASD/arrow movement. Pressed keys are cleared on window blur and when the tab is hidden. A storefront glows and gets a fire marker when 2+ avatars cluster at it (a "hot machine"). Standing still does not mark you active again; idle stays idle until you move.
-- **Touch joystick** (`src/components/TouchJoystick.tsx`, `src/lib/moveInput.ts`): an on-screen stick for mobile. It follows the pointer that pressed the stick and ignores other pointers. It writes an analog move vector that the scene prefers over WASD while the stick is held.
-- **Avatars** (`src/components/Avatar.tsx`): capsule avatars with a status dot (green = active, yellow = idle after 30s, grey = offline). Someone who disconnects stays on the street, grey, for about 20 seconds instead of vanishing immediately.
-- **SlotMachine** (`src/components/SlotMachine.tsx`): a placeholder machine on the Gold Rush facade. It has 3 reels, a fake spin animation, and a win/lose result. A 3-of-a-kind pays 10 × multiplier in play-money credits (at most 20). Odds are placeholders, not a real paytable or RTP.
-- **Multiplayer** (`src/liveblocks.ts`, `src/App.tsx`, `src/lib/winEvent.ts`): each client publishes `{x, z, color, name, status}` as Liveblocks presence in room `verseslots-mall-1`. Status is `active`, `idle`, or `offline`. Wins are sent with `useBroadcastEvent`. Incoming wins are checked before they hit the feed (safe primitives, known building id or name, play-money amount 1–20, one accepted win per connection per second). With no key, the app runs in **solo mode**.
-- **Geo** (`src/hooks/useGeolocation.ts`, `src/lib/geo.ts`): wraps `navigator.geolocation.watchPosition`. A denied or failed fix clears the last coordinates, and the multiplier falls back to 1x. Haversine `distanceToBuilding()` and `proximityMultiplier()` give 2x within 50 m, 1.5x within 200 m, and 1x for remote play. Building lat/lng values in `src/lib/buildings.ts` are placeholders.
+## Setup
 
-## File tree
-```
-verseslots/
-├── index.html
-├── package.json
-├── package-lock.json
-├── tsconfig.json
-├── vite.config.ts
-├── vercel.json
-├── .env.example
-├── .gitignore
-└── src/
-    ├── main.tsx
-    ├── App.tsx              # solo vs multiplayer, HUD, win feed, geo multipliers
-    ├── liveblocks.ts        # client + typed room context
-    ├── components/
-    │   ├── Scene.tsx
-    │   ├── Avatar.tsx
-    │   ├── SlotMachine.tsx
-    │   └── TouchJoystick.tsx
-    ├── hooks/useGeolocation.ts
-    └── lib/
-        ├── buildings.ts
-        ├── geo.ts
-        ├── moveInput.ts
-        └── winEvent.ts      # incoming win checks (play money)
-```
-
-## Run locally
 From the HOMOVERSE repo root:
 
 ```bash
 cd verseslots
 npm install
-cp .env.example .env.local   # optional, add your Liveblocks public key
-npm run dev                  # http://localhost:5173
+npm test
+npm run dev
 ```
 
-To test multiplayer, open two browser tabs. Geolocation needs `localhost` or HTTPS and your permission.
+Open the URL Vite prints (usually `http://localhost:5173`). Optional Liveblocks presence: copy `.env.example` to `.env.local` and set `VITE_LIVEBLOCKS_PUBLIC_KEY`. Without that key the app stays in solo mode. Do not commit `.env` or `.env.local`.
 
-## Liveblocks key
-1. Create a project at https://liveblocks.io/dashboard.
-2. Copy the **public** key (`pk_...`).
-3. Set `VITE_LIVEBLOCKS_PUBLIC_KEY=pk_...` in `verseslots/.env.local`. No server is needed for this demo. Do not commit `.env` or `.env.local`.
+## Mobile testing
 
-The public key is not authentication. Anyone who has it can join room `verseslots-mall-1` and broadcast events. That is acceptable for a play-money demo and is not a guarantee that a win happened. A real deployment needs a Liveblocks secret-key auth endpoint later: the secret stays on the server, and the client only receives a room-scoped token. Until then, `acceptWinEvent` drops incoming wins that fail simple checks — each field must be a safe primitive, text is length-clamped, the machine must be a known building id or storefront name, the amount must be a play-money payout from 1 to 20, and each connection may land at most one win per second. Those checks are not a substitute for the auth endpoint.
+Use a phone-sized window or the browser’s device toolbar (portrait and landscape). This repo was exercised in desktop Chrome with a mobile viewport and touch emulation, **not** on a physical iPhone or Android device.
 
-## Deploy to Vercel
-1. Push to GitHub, then go to Vercel → New Project → import the HOMOVERSE repo.
-2. Set the project **Root Directory** to `verseslots` so this app builds on its own, separate from anything at the repo root.
-3. Framework preset: **Vite** (build `npm run build`, output `dist`). `vercel.json` already sets these.
-4. Settings → Environment Variables: add `VITE_LIVEBLOCKS_PUBLIC_KEY` (the public key only), then redeploy.
+- Walk with the bottom-left stick. Up on the stick walks the way the camera faces.
+- Drag the view to look. Q and E, or WASD / arrow keys, are the desktop fallback.
+- Stand at a gold-trimmed storefront and press **Demo slot**. Walking stops until you close the sheet.
+- **Avatar** changes skin, hair, and outfit immediately. Choices stay in `localStorage` on this browser only.
+- The district menu switches fictional procedural layouts without using location.
+- **Use my location** is the only location control. Nothing prompts on load. Deny, timeout, and unavailable all leave you on the current synthetic district.
+- **Reset local demo** clears the saved avatar, layout, and demo-credit balance on this device.
 
-## Next steps
-These are product ideas, not implemented behavior and not offers of value:
+## What this build does
 
-- Liveblocks auth: replace the public key with a secret-key auth endpoint so joining a room is authenticated. The client-side win checks stay as a backstop only.
-- Real slot math: reel strips, paytable, target RTP, and a certified RNG — still play-money until a licensed product exists.
-- Jackpot logic: progressive and per-building exclusive jackpots for players on-site, plus server-side validation (move spins off the client).
-- Map real mall buildings to real coordinates, and add anti-GPS-spoofing checks.
-- B2B brand licensing layer: let storefront brands sponsor or skin machines.
-- Any ERC-20 or other token integration, only after licensing and legal review. This demo does not include one.
-- Auth and persistent profiles/credits (Liveblocks Storage or a backend).
+- Open-air plus-shaped promenade, corner parks, plaza, and curved storefronts. Black and gold accents, dusk lighting, one 1024 shadow map, procedural paving and plaster.
+- Human-scale follow camera and a smooth mannequin (about 1.75 m). Not a low-poly block character, and not a scanned person.
+- Collision so parks, the outer hedge, and an optional fountain are not walkable. Frame steps are capped so a hitch does not throw you across the street.
+- Full-screen demo slot on the four named storefronts. Opening it freezes walking; closing returns to the promenade. Stake is 1 demo credit. The gold panels are the real paytable: three H marks pay 10, jewels 8, arches 6, medallions 4. Two or three seahorses multiply that spin by 2, and a payout never exceeds 20. A sample feature button shows that state without changing the balance. Odds are a placeholder, not certified math. Balance, avatar, and chosen layout persist locally and can be reset.
+- Optional one-shot coarse location. The reading is quantized to a roughly 5 km cell, then discarded. A hysteresis band ignores border jitter. The cell is not shown, not logged, and not written to storage.
+- Previous multiplayer safeguards still apply: win events are checked, idle is not overwritten while you stand still, keys clear on blur, the joystick ignores other fingers, and a disconnected player stays grey for about 20 seconds.
+
+## Quality limits
+
+This is not photoreal. The slot is original SVG and CSS: black lacquer, champagne-gold bevels, and a drawn seahorse. It is not a photograph of a cabinet and it does not reproduce any commercial game's art, logo, or wording. The street has no photographic texture set, no HDRI, no real glass refraction, and no photogrammetry. Trees, hedges, and the body are smooth procedural meshes. Shadows are a single map. See `ASSETS.md`.
+
+## Safeguards
+
+- Location is off until **Use my location**. Failure does not block walking, avatar, or slots.
+- Raw coordinates are not rendered, logged, or stored. Reloading forgets a coarse anchor; the saved layout is the manual one.
+- Local save is prototype state on one browser. It is not an account and not authoritative.
+- Incoming multiplayer wins still have to be a known store id, a play-money amount from 1 to 20, and at most one accepted win per connection per second.
+- The Liveblocks public key is not authentication. A real deployment would need a secret-key auth endpoint. This prototype does not add one.
+
+## Not in this build
+
+- Real mall or street detection, paid maps, routing, or turn-by-turn guidance.
+- On-site distance payouts. Placeholder coordinates in `src/lib/buildings.ts` are unused.
+- Wallets, HOMO token balances, purchases, cashout, sweepstakes redemption, or real-value wagering.
+- App Store / Play Store builds and production deployment.
+- Entering interiors, certified slot math, and accounts.
+
+## Later HOMO-token note
+
+A future idea, **not implemented**, is a separate premium HOMO token used to buy or play higher-value slots, bonuses, or avatar items. That would be a real-value product. It needs a legal review of gambling, money transmission, securities, and store rules in each market **before** any integration. Nothing in this demo is that product. Calling credits “demo” or “cosmetic” is not a substitute for that review, and this repo does not claim the idea is legal.
+
+## Liveblocks and Vercel notes
+
+Liveblocks setup is unchanged and optional. `vercel.json` is only a static config for a possible later deploy. This prototype pass does not deploy.

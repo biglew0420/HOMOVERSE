@@ -1,4 +1,5 @@
-// Placeholder storefronts. Scene position (x,z) + placeholder real-world lat/lng.
+// Known demo storefront identities. x/z/lat/lng are legacy placeholders.
+// The walking district places these by id. Coordinates are not a map and do not pay a bonus.
 export type Building = { id: string; name: string; color: string; x: number; z: number; lat: number; lng: number };
 export const BUILDINGS: Building[] = [
   { id: 'gold', name: 'Gold Rush', color: '#d4af37', x: -9, z: -6, lat: 40.7128, lng: -74.006 },
