@@ -90,74 +90,77 @@ function shade(source: HTMLCanvasElement): HTMLCanvasElement {
 }
 
 function seahorseFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const s = Math.min(w, h) / 250;
-  ctx.translate((w - 220 * s) / 2, (h - 250 * s) / 2);
+  const s = Math.min(w / 220, h / 260) * 0.96;
+  ctx.translate((w - 220 * s) / 2, (h - 260 * s) / 2);
   ctx.scale(s, s);
 }
 
+/**
+ * Upright S-curve seahorse facing right.
+ * Head is bent down, snout is a long tube, coronet is one rounded knob,
+ * one dorsal sail sits on the back, and the tail spirals forward underneath.
+ */
 function paintSeahorse(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
   seahorseFrame(ctx, w, h);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  ctx.fillStyle = 'rgba(255,255,255,0.78)';
+
+  ctx.fillStyle = 'rgba(255,255,255,0.42)';
   ctx.beginPath();
-  ctx.moveTo(188, 62);
-  ctx.quadraticCurveTo(206, 74, 184, 82);
-  ctx.quadraticCurveTo(166, 92, 154, 78);
-  ctx.bezierCurveTo(148, 108, 170, 140, 150, 168);
-  ctx.bezierCurveTo(136, 196, 100, 214, 78, 196);
-  ctx.bezierCurveTo(48, 174, 42, 142, 74, 138);
-  ctx.bezierCurveTo(98, 134, 86, 168, 68, 166);
-  ctx.bezierCurveTo(50, 164, 58, 140, 80, 146);
-  ctx.bezierCurveTo(62, 120, 70, 86, 98, 64);
-  ctx.quadraticCurveTo(118, 42, 142, 40);
-  ctx.quadraticCurveTo(160, 28, 168, 48);
-  ctx.quadraticCurveTo(176, 42, 188, 62);
+  ctx.moveTo(78, 118);
+  ctx.quadraticCurveTo(46, 108, 52, 146);
+  ctx.quadraticCurveTo(58, 168, 90, 156);
+  ctx.quadraticCurveTo(74, 138, 78, 118);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 12;
+
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
   ctx.beginPath();
-  ctx.moveTo(168, 68);
-  ctx.bezierCurveTo(150, 110, 156, 148, 124, 176);
-  ctx.stroke();
+  ctx.moveTo(86, 78);
+  ctx.bezierCurveTo(70, 110, 74, 150, 92, 186);
+  ctx.lineTo(118, 190);
+  ctx.bezierCurveTo(142, 162, 146, 122, 128, 84);
+  ctx.closePath();
+  ctx.fill();
+
   ctx.fillStyle = 'white';
   ctx.beginPath();
-  ctx.ellipse(156, 58, 24, 18, -0.35, 0, Math.PI * 2);
+  ctx.ellipse(112, 56, 22, 16, 0.45, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(186, 66, 24, 7.5, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(154, 74, 36, 6.2, 0.42, 0, Math.PI * 2);
   ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(100, 36, 12, 7, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.strokeStyle = 'white';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 10;
   ctx.beginPath();
-  ctx.moveTo(136, 40);
-  ctx.lineTo(128, 16);
-  ctx.moveTo(150, 34);
-  ctx.lineTo(152, 10);
-  ctx.moveTo(164, 36);
-  ctx.lineTo(176, 14);
+  ctx.moveTo(124, 78);
+  ctx.bezierCurveTo(132, 120, 124, 156, 108, 184);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.62)';
+
+  ctx.lineWidth = 20;
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
   ctx.beginPath();
-  ctx.moveTo(108, 88);
-  ctx.lineTo(76, 72);
-  ctx.lineTo(84, 98);
-  ctx.lineTo(70, 112);
-  ctx.lineTo(92, 122);
-  ctx.lineTo(78, 140);
-  ctx.lineTo(112, 150);
-  ctx.closePath();
-  ctx.fill();
+  ctx.moveTo(106, 188);
+  ctx.arc(108, 214, 26, -Math.PI * 0.85, Math.PI * 0.95, false);
+  ctx.stroke();
+  ctx.lineWidth = 11;
+  ctx.beginPath();
+  ctx.arc(112, 214, 14, Math.PI * 0.15, Math.PI * 1.35, false);
+  ctx.stroke();
+
   ctx.globalCompositeOperation = 'destination-out';
-  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-  ctx.lineWidth = 2.4;
-  for (let i = 0; i < 5; i++) {
-    const y = 112 + i * 13;
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 4; i++) {
+    const y = 108 + i * 16;
     ctx.beginPath();
-    ctx.moveTo(124, y);
-    ctx.quadraticCurveTo(146, y + 5, 166, y - 1);
+    ctx.moveTo(96, y);
+    ctx.quadraticCurveTo(118, y + 5, 140, y);
     ctx.stroke();
   }
   ctx.restore();
@@ -168,11 +171,11 @@ function finishSeahorse(ctx: CanvasRenderingContext2D, w: number, h: number) {
   seahorseFrame(ctx, w, h);
   ctx.fillStyle = '#140e08';
   ctx.beginPath();
-  ctx.arc(164, 54, 5.4, 0, Math.PI * 2);
+  ctx.arc(118, 52, 4.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#fffaf0';
   ctx.beginPath();
-  ctx.arc(166, 52, 1.8, 0, Math.PI * 2);
+  ctx.arc(119.4, 50.6, 1.45, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }

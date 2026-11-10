@@ -235,7 +235,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       </div>
       <div className="brandrow">
         <span className="brand">HOMO</span>
-        <span>{name}</span>
+        <span>Gold Seahorse</span>
         <span>Stake {DEMO_STAKE}</span>
       </div>
       <div className="paytable" data-testid="paytable" aria-label="Demo paytable">
