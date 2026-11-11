@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd verseslots && npm ci",
+  "buildCommand": "cd verseslots && npm run build",
+  "outputDirectory": "verseslots/dist",
+  "framework": null
+}
