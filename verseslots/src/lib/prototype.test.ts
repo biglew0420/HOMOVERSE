@@ -129,3 +129,17 @@ describe('win checks still hold', () => {
     expect(acceptWinEvent({ type: 'win', name: 'A', machine: 'facade-0', amount: 10 }, 4, map, 1000)).toBeNull();
   });
 });
+
+import { OUTFITS as _OUTFITS, OUTFIT_LABELS as _LABELS, outfitColors as _oc, sanitizeAvatar as _san } from './avatarStyle';
+import { describe as _d, it as _it, expect as _e } from 'vitest';
+_d('knight and ivory outfits', () => {
+  _it('are selectable, labeled and survive sanitize', () => {
+    _e(_OUTFITS).toContain('knight');
+    _e(_OUTFITS).toContain('ivory');
+    _e(_LABELS.knight).toBe('Knight Armor');
+    const k = _san({ skin: 0, hair: 'short', hairColor: 0, outfit: 'knight' });
+    _e(k.outfit).toBe('knight');
+    _e(_oc(k).armor).toBe(true);
+    _e(_oc(_san({ outfit: 'ivory' })).armor).toBeFalsy();
+  });
+});
