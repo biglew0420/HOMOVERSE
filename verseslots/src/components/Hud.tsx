@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { LAYOUTS, areaNotice, geoFailureCopy, type AreaMode, type GeoFailure, type LayoutKey } from '../lib/area';
-import { HAIR_COLORS, HAIR_STYLES, OUTFITS, SKIN_TONES, type AvatarStyle } from '../lib/avatarStyle';
+import { HAIR_COLORS, HAIR_STYLES, OUTFITS, OUTFIT_LABELS, SKIN_TONES, type AvatarStyle } from '../lib/avatarStyle';
 import { frameStats } from '../lib/frameStats';
 import { SlotMachine } from './SlotMachine';
 
@@ -181,7 +181,7 @@ export function Hud(props: Props) {
           </label>
           <label>Outfit
             <select data-testid="avatar-outfit" style={{ ...field, width: '100%' }} value={props.avatar.outfit} onChange={(e) => props.onAvatar({ ...props.avatar, outfit: e.target.value as AvatarStyle['outfit'] })}>
-              {OUTFITS.map((outfit) => <option key={outfit} value={outfit}>{outfit}</option>)}
+              {OUTFITS.map((outfit) => <option key={outfit} value={outfit}>{OUTFIT_LABELS[outfit]}</option>)}
             </select>
           </label>
         </div>
