@@ -9,10 +9,11 @@ export type DemoState = {
   credits: number;
   layoutKey: LayoutKey;
   avatar: AvatarStyle;
+  displayName: string;
 };
 
 export function defaultDemoState(): DemoState {
-  return { credits: STARTING_CREDITS, layoutKey: DEFAULT_LAYOUT, avatar: { ...DEFAULT_AVATAR } };
+  return { credits: STARTING_CREDITS, layoutKey: DEFAULT_LAYOUT, avatar: { ...DEFAULT_AVATAR }, displayName: '' };
 }
 
 function clampCredits(value: unknown): number {
@@ -27,10 +28,12 @@ export function loadDemoState(raw: string | null): DemoState {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const layout = typeof parsed.layoutKey === 'string' && isLayoutKey(parsed.layoutKey) ? parsed.layoutKey : DEFAULT_LAYOUT;
+    const displayName = typeof parsed.displayName === 'string' ? parsed.displayName.trim().slice(0, 24) : '';
     return {
       credits: clampCredits(parsed.credits),
       layoutKey: layout,
       avatar: sanitizeAvatar(parsed.avatar),
+      displayName,
     };
   } catch {
     return defaultDemoState();
@@ -43,6 +46,7 @@ export function serializeDemoState(state: DemoState): string {
     credits: clampCredits(state.credits),
     layoutKey: isLayoutKey(state.layoutKey) ? state.layoutKey : DEFAULT_LAYOUT,
     avatar: sanitizeAvatar(state.avatar),
+    displayName: state.displayName.trim().slice(0, 24),
   };
   return JSON.stringify(safe);
 }

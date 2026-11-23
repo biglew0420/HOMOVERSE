@@ -89,96 +89,6 @@ function shade(source: HTMLCanvasElement): HTMLCanvasElement {
   return lit;
 }
 
-function seahorseFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const s = Math.min(w / 220, h / 260) * 0.96;
-  ctx.translate((w - 220 * s) / 2, (h - 260 * s) / 2);
-  ctx.scale(s, s);
-}
-
-/**
- * Upright S-curve seahorse facing right.
- * Head is bent down, snout is a long tube, coronet is one rounded knob,
- * one dorsal sail sits on the back, and the tail spirals forward underneath.
- */
-function paintSeahorse(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save();
-  seahorseFrame(ctx, w, h);
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-
-  ctx.fillStyle = 'rgba(255,255,255,0.42)';
-  ctx.beginPath();
-  ctx.moveTo(78, 118);
-  ctx.quadraticCurveTo(46, 108, 52, 146);
-  ctx.quadraticCurveTo(58, 168, 90, 156);
-  ctx.quadraticCurveTo(74, 138, 78, 118);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.beginPath();
-  ctx.moveTo(86, 78);
-  ctx.bezierCurveTo(70, 110, 74, 150, 92, 186);
-  ctx.lineTo(118, 190);
-  ctx.bezierCurveTo(142, 162, 146, 122, 128, 84);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = 'white';
-  ctx.beginPath();
-  ctx.ellipse(112, 56, 22, 16, 0.45, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(154, 74, 36, 6.2, 0.42, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(100, 36, 12, 7, -0.15, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 10;
-  ctx.beginPath();
-  ctx.moveTo(124, 78);
-  ctx.bezierCurveTo(132, 120, 124, 156, 108, 184);
-  ctx.stroke();
-
-  ctx.lineWidth = 20;
-  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-  ctx.beginPath();
-  ctx.moveTo(106, 188);
-  ctx.arc(108, 214, 26, -Math.PI * 0.85, Math.PI * 0.95, false);
-  ctx.stroke();
-  ctx.lineWidth = 11;
-  ctx.beginPath();
-  ctx.arc(112, 214, 14, Math.PI * 0.15, Math.PI * 1.35, false);
-  ctx.stroke();
-
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 1.4;
-  for (let i = 0; i < 4; i++) {
-    const y = 108 + i * 16;
-    ctx.beginPath();
-    ctx.moveTo(96, y);
-    ctx.quadraticCurveTo(118, y + 5, 140, y);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function finishSeahorse(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save();
-  seahorseFrame(ctx, w, h);
-  ctx.fillStyle = '#140e08';
-  ctx.beginPath();
-  ctx.arc(118, 52, 4.4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fffaf0';
-  ctx.beginPath();
-  ctx.arc(119.4, 50.6, 1.45, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
 
 function paintH(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
@@ -187,88 +97,123 @@ function paintH(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.beginPath();
   roundRect(ctx, 36, 22, 36, 156, 12);
   roundRect(ctx, 128, 22, 36, 156, 12);
-  roundRect(ctx, 58, 82, 84, 36, 10);
   ctx.fill();
   ctx.fillStyle = 'white';
   ctx.beginPath();
   roundRect(ctx, 46, 32, 16, 120, 8);
   roundRect(ctx, 138, 32, 16, 120, 8);
-  roundRect(ctx, 70, 90, 60, 16, 8);
+  ctx.fill();
+  // Diamond-lozenge crossbar
+  ctx.beginPath();
+  ctx.moveTo(100, 78);
+  ctx.lineTo(148, 100);
+  ctx.lineTo(100, 122);
+  ctx.lineTo(52, 100);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(100, 86);
+  ctx.lineTo(136, 100);
+  ctx.lineTo(100, 114);
+  ctx.lineTo(64, 100);
+  ctx.closePath();
+  ctx.fillStyle = 'white';
   ctx.fill();
   ctx.restore();
 }
 
-function paintJewel(ctx: CanvasRenderingContext2D, w: number, h: number) {
+function paintCrown(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  ctx.save();
+  ctx.scale(w / 200, h / 200);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath();
+  ctx.moveTo(30, 150);
+  ctx.lineTo(40, 70);
+  ctx.lineTo(70, 110);
+  ctx.lineTo(100, 44);
+  ctx.lineTo(130, 110);
+  ctx.lineTo(160, 70);
+  ctx.lineTo(170, 150);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.beginPath();
+  ctx.moveTo(42, 140);
+  ctx.lineTo(50, 84);
+  ctx.lineTo(74, 116);
+  ctx.lineTo(100, 62);
+  ctx.lineTo(126, 116);
+  ctx.lineTo(150, 84);
+  ctx.lineTo(158, 140);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillRect(36, 148, 128, 22);
+  ctx.beginPath();
+  ctx.arc(100, 50, 10, 0, Math.PI * 2);
+  ctx.arc(46, 74, 7, 0, Math.PI * 2);
+  ctx.arc(154, 74, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function paintDiamond(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
   ctx.scale(w / 200, h / 200);
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.beginPath();
   ctx.moveTo(100, 18);
-  ctx.lineTo(164, 62);
-  ctx.lineTo(146, 168);
-  ctx.lineTo(54, 168);
-  ctx.lineTo(36, 62);
+  ctx.lineTo(164, 80);
+  ctx.lineTo(100, 182);
+  ctx.lineTo(36, 80);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = 'white';
   ctx.beginPath();
-  ctx.moveTo(100, 36);
-  ctx.lineTo(142, 70);
-  ctx.lineTo(100, 92);
-  ctx.lineTo(58, 70);
+  ctx.moveTo(100, 32);
+  ctx.lineTo(148, 80);
+  ctx.lineTo(100, 96);
+  ctx.lineTo(52, 80);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.8)';
   ctx.beginPath();
-  ctx.moveTo(100, 92);
-  ctx.lineTo(138, 154);
-  ctx.lineTo(62, 154);
+  ctx.moveTo(100, 96);
+  ctx.lineTo(148, 80);
+  ctx.lineTo(100, 168);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
 }
 
-function paintArch(ctx: CanvasRenderingContext2D, w: number, h: number) {
+function paintChampagne(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
   ctx.scale(w / 200, h / 200);
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(255,255,255,0.62)';
-  ctx.lineWidth = 28;
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
   ctx.beginPath();
-  ctx.moveTo(48, 168);
-  ctx.lineTo(48, 96);
-  ctx.bezierCurveTo(48, 36, 152, 36, 152, 96);
-  ctx.lineTo(152, 168);
-  ctx.stroke();
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 10;
-  ctx.stroke();
-  ctx.fillStyle = 'white';
-  ctx.fillRect(36, 158, 28, 16);
-  ctx.fillRect(136, 158, 28, 16);
-  ctx.restore();
-}
-
-function paintMedallion(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save();
-  ctx.scale(w / 200, h / 200);
-  ctx.fillStyle = 'rgba(255,255,255,0.62)';
-  ctx.beginPath();
-  ctx.arc(100, 100, 78, 0, Math.PI * 2);
+  ctx.moveTo(70, 36);
+  ctx.quadraticCurveTo(100, 8, 130, 36);
+  ctx.lineTo(118, 86);
+  ctx.quadraticCurveTo(100, 108, 82, 86);
+  ctx.closePath();
   ctx.fill();
   ctx.fillStyle = 'white';
   ctx.beginPath();
-  ctx.arc(100, 100, 62, 0, Math.PI * 2);
+  ctx.moveTo(78, 40);
+  ctx.quadraticCurveTo(100, 20, 122, 40);
+  ctx.lineTo(112, 80);
+  ctx.quadraticCurveTo(100, 94, 88, 80);
+  ctx.closePath();
   ctx.fill();
-  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillRect(94, 100, 12, 58);
   ctx.beginPath();
-  ctx.arc(100, 100, 40, 0, Math.PI * 2);
+  ctx.ellipse(100, 168, 28, 8, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = 'white';
-  ctx.fillRect(78, 58, 14, 84);
-  ctx.fillRect(108, 58, 14, 84);
-  ctx.fillRect(84, 90, 32, 16);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(86, 34, 5, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(118, 30, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -290,16 +235,11 @@ export function litCanvas(id: SymbolId): HTMLCanvasElement {
   if (hit) return hit;
   const made = blank(360, 360);
   const { canvas, ctx } = made;
-  if (id === 'seahorse') paintSeahorse(ctx, canvas.width, canvas.height);
-  else if (id === 'hmark') paintH(ctx, canvas.width, canvas.height);
-  else if (id === 'jewel') paintJewel(ctx, canvas.width, canvas.height);
-  else if (id === 'arch') paintArch(ctx, canvas.width, canvas.height);
-  else paintMedallion(ctx, canvas.width, canvas.height);
+  if (id === 'hmark') paintH(ctx, canvas.width, canvas.height);
+  else if (id === 'crown') paintCrown(ctx, canvas.width, canvas.height);
+  else if (id === 'diamond') paintDiamond(ctx, canvas.width, canvas.height);
+  else paintChampagne(ctx, canvas.width, canvas.height);
   const lit = shade(canvas);
-  if (id === 'seahorse') {
-    const litCtx = lit.getContext('2d');
-    if (litCtx) finishSeahorse(litCtx, lit.width, lit.height);
-  }
   cache.set(id, lit);
   return lit;
 }

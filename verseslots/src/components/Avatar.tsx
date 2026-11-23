@@ -4,6 +4,7 @@ import { Html } from '@react-three/drei';
 import type { Group } from 'three';
 import { hairColor, outfitColors, skinColor, type AvatarStyle } from '../lib/avatarStyle';
 import { lookInput } from '../lib/lookInput';
+import { Collar, GoldHPin, Head } from './CharacterBits';
 import { moveInput } from '../lib/moveInput';
 
 const STATUS = { active: '#3f3', idle: '#fc3', offline: '#777' } as const;
@@ -18,6 +19,8 @@ export function Avatar({
   status,
   sim,
   showLabel = true,
+  memberBadge = false,
+  tagColor,
 }: {
   x: number;
   z: number;
@@ -26,6 +29,8 @@ export function Avatar({
   status: keyof typeof STATUS;
   sim?: React.MutableRefObject<Sim>;
   showLabel?: boolean;
+  memberBadge?: boolean;
+  tagColor?: string;
 }) {
   const group = useRef<Group>(null);
   const colors = outfitColors(style);
@@ -40,7 +45,8 @@ export function Avatar({
     if (!body) return;
     if (sim) {
       const moving = Math.hypot(moveInput.x, moveInput.z) > 0.08;
-      body.position.set(sim.current.x, moving ? Math.sin(state.clock.elapsedTime * 8) * 0.025 : 0, sim.current.z);
+      const breathe = Math.sin(state.clock.elapsedTime * 1.7) * 0.015;
+      body.position.set(sim.current.x, moving ? Math.sin(state.clock.elapsedTime * 8) * 0.025 : breathe, sim.current.z);
       body.rotation.y = lookInput.yaw + Math.PI;
     } else {
       body.position.set(x, 0, z);
@@ -69,6 +75,7 @@ export function Avatar({
         <capsuleGeometry args={[0.16, 0.42, 8, 18]} />
         <meshStandardMaterial color={colors.jacket} roughness={rough} metalness={metal} />
       </mesh>
+      <Collar color={colors.jacket} y={1.34} />
       <mesh position={[0, 1.36, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.11, 0.018, 10, 20]} />
         <meshStandardMaterial color={colors.accent} metalness={0.85} roughness={0.28} />
@@ -97,10 +104,7 @@ export function Avatar({
         <sphereGeometry args={[0.045, 14, 12]} />
         <meshStandardMaterial color={skin} roughness={0.55} />
       </mesh>
-      <mesh position={[0, 1.6, 0]} castShadow>
-        <sphereGeometry args={[0.135, 28, 22]} />
-        <meshStandardMaterial color={skin} roughness={0.48} />
-      </mesh>
+      <Head skin={skin} y={1.6} />
       {!armor && style.hair !== 'none' && (
         <mesh position={[0, 1.69, style.hair === 'long' ? -0.02 : 0]} scale={[1, style.hair === 'long' ? 0.7 : 0.55, 1]} castShadow>
           <sphereGeometry args={[0.145, 24, 18]} />
@@ -154,9 +158,10 @@ export function Avatar({
           </mesh>
         </group>
       )}
+      {memberBadge && <GoldHPin position={[0.18, 1.42, 0.17]} />}
       <mesh position={[0, 1.82, 0]}>
         <sphereGeometry args={[0.035, 12, 10]} />
-        <meshBasicMaterial color={STATUS[status]} />
+        <meshBasicMaterial color={tagColor ?? STATUS[status]} />
       </mesh>
       {showLabel && name && <Html position={[0, 1.98, 0]} center zIndexRange={[2, 0]} style={{ fontSize: 11, whiteSpace: 'nowrap', color: '#f6edd6', textShadow: '0 1px 2px #000', pointerEvents: 'none' }}>{name}</Html>}
     </group>

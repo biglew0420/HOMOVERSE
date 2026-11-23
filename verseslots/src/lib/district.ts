@@ -1,12 +1,16 @@
-import { BUILDINGS } from './buildings';
+import { GOLDEN_HOUR_ID, SHOPS, type ShopDef, type ShopMaterial } from './shops';
 
 export const STREET_HALF = 6;
-export const WORLD = 20;
+export const WORLD = 16;
+export const RING_RADIUS = 11.2;
+export const WALK_RADIUS = 8.7;
 export const AVATAR_RADIUS = 0.32;
 export const WALK_SPEED = 2.6;
 export const MAX_FRAME_DT = 0.05;
-export const SLOT_REACH = 2.2;
-export const SPAWN = { x: 0, z: 7.2 };
+export const SLOT_REACH = 2.4;
+export const FOUNTAIN_RADIUS = 1.32;
+export const SPAWN = { x: 0, z: 4.35 };
+export const BENCH = { x: 3.15, z: 1.55, rotY: -0.7 };
 
 export const PUBLIC_DISTRICT_LABEL = 'Procedural synthetic open-air district. Not a real mall, map, or directions.';
 
@@ -14,7 +18,13 @@ export type Storefront = {
   id: string;
   name: string;
   signColor: string;
+  awningColor: string;
+  material: ShopMaterial;
+  enterable: boolean;
   playable: boolean;
+  href?: string;
+  kind: ShopDef['kind'];
+  searchHint: string;
   x: number;
   z: number;
   rotY: number;
@@ -23,6 +33,7 @@ export type Storefront = {
   d: number;
   interactX: number;
   interactZ: number;
+  padIndex: number;
 };
 
 export type TreeSpot = { x: number; z: number; scale: number };
@@ -37,35 +48,7 @@ export type District = {
   lamps: LampSpot[];
 };
 
-const PLAY_PADS: Array<Pick<Storefront, 'x' | 'z' | 'rotY' | 'interactX' | 'interactZ'>> = [
-  { x: -8.4, z: -11, rotY: -Math.PI / 2, interactX: -5.35, interactZ: -11 },
-  { x: -8.4, z: 11, rotY: -Math.PI / 2, interactX: -5.35, interactZ: 11 },
-  { x: 8.4, z: -11, rotY: Math.PI / 2, interactX: 5.35, interactZ: -11 },
-  { x: 8.4, z: 11, rotY: Math.PI / 2, interactX: 5.35, interactZ: 11 },
-];
-
-const FACADE_PADS: Array<Pick<Storefront, 'name' | 'x' | 'z' | 'rotY'>> = [
-  { name: 'Park Row', x: -14, z: -8.5, rotY: 0 },
-  { name: 'Night Market', x: 14, z: -8.5, rotY: 0 },
-  { name: 'Lamp Street', x: -14, z: 8.5, rotY: Math.PI },
-  { name: 'Plaza Goods', x: 14, z: 8.5, rotY: Math.PI },
-];
-
-const TREE_CHOICES: TreeSpot[][] = [
-  [{ x: -12, z: -14, scale: 1 }, { x: -16.5, z: -12, scale: 0.85 }],
-  [{ x: 12.5, z: -15, scale: 1.05 }, { x: 16.5, z: -11, scale: 0.8 }],
-  [{ x: -13, z: 14, scale: 0.95 }, { x: -17, z: 11.5, scale: 0.75 }],
-  [{ x: 13, z: 15, scale: 1 }, { x: 17, z: 12, scale: 0.82 }],
-];
-
-const LAMPS: LampSpot[] = [
-  { x: -7.1, z: -14 }, { x: 7.1, z: -14 },
-  { x: -7.1, z: 14 }, { x: 7.1, z: 14 },
-  { x: -14, z: -7.1 }, { x: 14, z: -7.1 },
-  { x: -14, z: 7.1 }, { x: 14, z: 7.1 },
-];
-
-function hashString(value: string): number {
+export function hashString(value: string): number {
   let h = 2166136261;
   for (let i = 0; i < value.length; i++) {
     h ^= value.charCodeAt(i);
@@ -74,7 +57,7 @@ function hashString(value: string): number {
   return h >>> 0;
 }
 
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed || 1;
   return () => {
     a |= 0;
@@ -102,12 +85,9 @@ export function wishVector(ax: number, az: number, yaw: number): { dx: number; d
 
 export function blocked(x: number, z: number, radius: number, fountain: boolean): boolean {
   if (Math.abs(x) > WORLD - radius || Math.abs(z) > WORLD - radius) return true;
-  const edge = STREET_HALF - radius;
-  if (x < -edge && z < -edge) return true;
-  if (x > edge && z < -edge) return true;
-  if (x < -edge && z > edge) return true;
-  if (x > edge && z > edge) return true;
-  if (fountain && x * x + z * z < (1.15 + radius) * (1.15 + radius)) return true;
+  const r = Math.hypot(x, z);
+  if (r > WALK_RADIUS - radius) return true;
+  if (fountain && r < FOUNTAIN_RADIUS + radius) return true;
   return false;
 }
 
@@ -119,58 +99,88 @@ export function tryMove(x: number, z: number, dx: number, dz: number, fountain: 
   return { x: nx, z: nz };
 }
 
-export function buildDistrict(seed: string, publicName: string): District {
-  const rand = mulberry32(hashString(seed));
-  const order = [...BUILDINGS];
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  const storefronts: Storefront[] = PLAY_PADS.map((pad, index) => {
-    const building = order[index];
-    return {
-      ...pad,
-      id: building.id,
-      name: building.name,
-      signColor: building.color,
-      playable: true,
-      w: 4.4,
-      h: 4.7 + rand() * 1.15,
-      d: 3.1,
-    };
-  });
-  FACADE_PADS.forEach((pad, index) => {
-    storefronts.push({
-      ...pad,
-      id: `facade-${index}`,
-      signColor: '#d4af37',
-      playable: false,
-      w: 5.1,
-      h: 4.3 + rand() * 0.9,
-      d: 2.8,
-      interactX: pad.x,
-      interactZ: pad.z,
-    });
-  });
-  const trees = TREE_CHOICES.map((choices) => {
-    const pick = choices[Math.floor(rand() * choices.length)];
-    return { ...pick, scale: pick.scale * (0.92 + rand() * 0.2) };
-  });
+const PAD_COUNT = 8;
+const INSET = 2.9;
+
+function padPose(index: number) {
+  const angle = (index / PAD_COUNT) * Math.PI * 2;
+  // angle 0 is due north (−Z), so spawn (facing −Z) looks at the fountain and Golden Hour beyond it.
+  const x = Math.sin(angle) * RING_RADIUS;
+  const z = -Math.cos(angle) * RING_RADIUS;
   return {
-    seed,
-    publicName,
-    fountain: rand() > 0.42,
-    storefronts,
-    trees,
-    lamps: LAMPS,
+    angle,
+    x,
+    z,
+    rotY: -angle,
+    interactX: Math.sin(angle) * (RING_RADIUS - INSET),
+    interactZ: -Math.cos(angle) * (RING_RADIUS - INSET),
   };
 }
 
-export function nearestPlayable(x: number, z: number, district: District, reach = SLOT_REACH): Storefront | null {
+function toStorefront(shop: ShopDef, index: number, rand: () => number): Storefront {
+  const pad = padPose(index);
+  return {
+    ...pad,
+    id: shop.id,
+    name: shop.name,
+    signColor: shop.signColor,
+    awningColor: shop.awningColor,
+    material: shop.material,
+    enterable: shop.enterable,
+    playable: shop.playable,
+    href: shop.href,
+    kind: shop.kind,
+    searchHint: shop.searchHint,
+    w: 4.5 + rand() * 0.45,
+    h: 5.1 + rand() * 1.35,
+    d: 3.2,
+    padIndex: index,
+  };
+}
+
+export function buildDistrict(seed: string, publicName: string): District {
+  const rand = mulberry32(hashString(seed));
+  const golden = SHOPS.find((shop) => shop.id === GOLDEN_HOUR_ID)!;
+  const rest = SHOPS.filter((shop) => shop.id !== GOLDEN_HOUR_ID);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  // Pad 0 is due north (−Z), always Golden Hour, visible beyond the fountain from spawn.
+  const storefronts = [toStorefront(golden, 0, rand), ...rest.map((shop, i) => toStorefront(shop, i + 1, rand))];
+
+  const trees: TreeSpot[] = [];
+  for (let i = 0; i < PAD_COUNT; i++) {
+    const angle = ((i + 0.5) / PAD_COUNT) * Math.PI * 2;
+    const radius = 13.4 + rand() * 0.5;
+    trees.push({
+      x: Math.sin(angle) * radius,
+      z: Math.cos(angle) * radius,
+      scale: 0.8 + rand() * 0.28,
+    });
+  }
+
+  const lamps: LampSpot[] = [];
+  for (let i = 0; i < PAD_COUNT; i++) {
+    const angle = (i / PAD_COUNT) * Math.PI * 2 + Math.PI / PAD_COUNT;
+    const radius = 6.35;
+    lamps.push({ x: Math.sin(angle) * radius, z: Math.cos(angle) * radius });
+  }
+
+  return {
+    seed,
+    publicName,
+    fountain: true,
+    storefronts,
+    trees,
+    lamps,
+  };
+}
+
+export function nearestStore(x: number, z: number, district: District, reach = SLOT_REACH): Storefront | null {
   let best: Storefront | null = null;
   let bestDist = reach;
   for (const store of district.storefronts) {
-    if (!store.playable) continue;
     const dist = Math.hypot(x - store.interactX, z - store.interactZ);
     if (dist <= bestDist) {
       best = store;
@@ -180,8 +190,23 @@ export function nearestPlayable(x: number, z: number, district: District, reach 
   return best;
 }
 
+export function nearestEnterable(x: number, z: number, district: District, reach = SLOT_REACH): Storefront | null {
+  const near = nearestStore(x, z, district, reach);
+  return near && near.enterable ? near : null;
+}
+
+/** Playable means the Golden Hour door (the demo slot lives inside). */
+export function nearestPlayable(x: number, z: number, district: District, reach = SLOT_REACH): Storefront | null {
+  const near = nearestStore(x, z, district, reach);
+  return near && near.playable ? near : null;
+}
+
+export function storeById(district: District, id: string): Storefront | undefined {
+  return district.storefronts.find((store) => store.id === id);
+}
+
 export function districtSignature(district: District): string {
-  const plays = district.storefronts.filter((store) => store.playable).map((store) => `${store.id}@${store.z > 0 ? 's' : 'n'}${store.x > 0 ? 'e' : 'w'}`);
+  const plays = district.storefronts.map((store) => `${store.id}@${store.padIndex}`);
   const heights = district.storefronts.map((store) => store.h.toFixed(2)).join(',');
   return `${plays.join('|')}|f${district.fountain ? 1 : 0}|${heights}`;
 }
