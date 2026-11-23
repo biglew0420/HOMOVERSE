@@ -1,38 +1,50 @@
 import { describe, expect, it } from 'vitest';
 import { acceptWinEvent, MAX_PLAY_PAYOUT } from './winEvent';
 import { areaNotice, classifyGeoError, geoFailureCopy, isLayoutKey, quantize, stabilize } from './area';
-import { buildDistrict, blocked, districtSignature, frameStep, nearestPlayable, SPAWN, tryMove, wishVector, WALK_SPEED, MAX_FRAME_DT } from './district';
+import { buildDistrict, blocked, districtSignature, frameStep, nearestEnterable, nearestPlayable, SPAWN, tryMove, wishVector, WALK_SPEED, MAX_FRAME_DT, WALK_RADIUS } from './district';
+import { GOLDEN_HOUR_ID } from './shops';
 import { loadDemoState, serializeDemoState, STARTING_CREDITS } from './demoState';
+import { HUD_AA_PAIRS, contrastRatio } from './theme';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 describe('district', () => {
-  it('is deterministic and walkable at spawn', () => {
+  it('is deterministic and walkable at spawn, with Golden Hour ahead', () => {
     const a = buildDistrict('demo-default', 'Default promenade');
     const b = buildDistrict('demo-default', 'Default promenade');
     expect(districtSignature(a)).toBe(districtSignature(b));
+    expect(a.fountain).toBe(true);
     expect(blocked(SPAWN.x, SPAWN.z, 0.32, a.fountain)).toBe(false);
-    for (const store of a.storefronts.filter((s) => s.playable)) {
+    const golden = a.storefronts.find((s) => s.id === GOLDEN_HOUR_ID);
+    expect(golden).toBeTruthy();
+    expect(golden!.padIndex).toBe(0);
+    expect(golden!.z).toBeLessThan(0);
+    expect(blocked(golden!.interactX, golden!.interactZ, 0.32, a.fountain)).toBe(false);
+    for (const store of a.storefronts.filter((s) => s.enterable)) {
       expect(blocked(store.interactX, store.interactZ, 0.32, a.fountain)).toBe(false);
     }
   });
 
-  it('changes with a different seed and keeps the same paths', () => {
+  it('changes with a different seed and keeps the plaza paths', () => {
     const a = buildDistrict('demo-default', 'Default promenade');
     const b = buildDistrict('layout-harbor', 'Harbor walk');
     expect(districtSignature(a)).not.toBe(districtSignature(b));
-    expect(blocked(0, 0, 0.32, false)).toBe(false);
-    expect(blocked(-10, -10, 0.32, false)).toBe(true);
+    expect(a.storefronts.find((s) => s.id === GOLDEN_HOUR_ID)?.padIndex).toBe(0);
+    expect(b.storefronts.find((s) => s.id === GOLDEN_HOUR_ID)?.padIndex).toBe(0);
+    expect(blocked(SPAWN.x, SPAWN.z, 0.32, false)).toBe(false);
+    expect(blocked(-12, -12, 0.32, false)).toBe(true);
   });
 
-  it('slides along a park edge instead of entering it', () => {
-    const next = tryMove(-5.2, 8, -3, -1, false);
-    expect(next.x).toBeGreaterThan(-5.8);
-    expect(next.z).toBeLessThan(8);
+  it('slides along the walk ring instead of leaving the plaza', () => {
+    const next = tryMove(0, WALK_RADIUS - 0.5, 0, 3, false);
+    expect(next.z).toBeLessThan(WALK_RADIUS);
+    expect(blocked(next.x, next.z, 0.32, false)).toBe(false);
   });
 
   it('does not tunnel on a huge step', () => {
-    const next = tryMove(0, 0, -30, -30, false);
-    expect(blocked(next.x, next.z, 0.32, false)).toBe(false);
-    expect(Math.hypot(next.x, next.z)).toBeLessThan(8);
+    const next = tryMove(SPAWN.x, SPAWN.z, -30, -30, true);
+    expect(blocked(next.x, next.z, 0.32, true)).toBe(false);
+    expect(Math.hypot(next.x, next.z)).toBeLessThan(WALK_RADIUS);
   });
 
   it('caps a frame step below a human stride', () => {
@@ -47,11 +59,13 @@ describe('district', () => {
     expect(wish.dz).toBeCloseTo(-1);
   });
 
-  it('finds a playable storefront only from the walkway point', () => {
+  it('finds an enterable door only from the walkway point', () => {
     const district = buildDistrict('demo-default', 'Default promenade');
-    const store = district.storefronts.find((s) => s.playable && s.z > 0 && s.x < 0)!;
-    expect(nearestPlayable(store.interactX, store.interactZ, district)?.id).toBe(store.id);
-    expect(nearestPlayable(0, 0, district)).toBeNull();
+    const store = district.storefronts.find((s) => s.id === GOLDEN_HOUR_ID)!;
+    expect(nearestPlayable(store.interactX, store.interactZ, district)?.id).toBe(GOLDEN_HOUR_ID);
+    expect(nearestEnterable(store.interactX, store.interactZ, district)?.id).toBe(GOLDEN_HOUR_ID);
+    expect(nearestPlayable(SPAWN.x, SPAWN.z, district)).toBeNull();
+    expect(nearestEnterable(0, 0, district)).toBeNull();
   });
 });
 
@@ -96,6 +110,7 @@ describe('local demo state', () => {
       credits: 40.4,
       layoutKey: 'layout-park',
       avatar: { skin: 2, hair: 'long', hairColor: 3, outfit: 'ivory' },
+      displayName: 'Lewis',
       lat: 40.7128,
       lng: -74.006,
       token: 'homo',
@@ -105,6 +120,7 @@ describe('local demo state', () => {
     expect(state.credits).toBe(40);
     expect(state.layoutKey).toBe('layout-park');
     expect(state.avatar.outfit).toBe('ivory');
+    expect(state.displayName).toBe('Lewis');
     const saved = serializeDemoState(state);
     expect(saved).not.toMatch(/40\.71|latitude|wallet|token|lng/i);
   });
@@ -123,9 +139,9 @@ describe('local demo state', () => {
 describe('win checks still hold', () => {
   it('drops malformed and out-of-range payouts', () => {
     const map = new Map<number, number>();
-    expect(acceptWinEvent({ type: 'win', name: 'A', machine: 'gold', amount: 10 }, 1, map, 1000)?.amount).toBe(10);
-    expect(acceptWinEvent({ type: 'win', name: { bad: true }, machine: 'gold', amount: 10 }, 2, map, 1000)).toBeNull();
-    expect(acceptWinEvent({ type: 'win', name: 'A', machine: 'gold', amount: MAX_PLAY_PAYOUT + 1 }, 3, map, 1000)).toBeNull();
+    expect(acceptWinEvent({ type: 'win', name: 'A', machine: 'golden', amount: 10 }, 1, map, 1000)?.amount).toBe(10);
+    expect(acceptWinEvent({ type: 'win', name: { bad: true }, machine: 'golden', amount: 10 }, 2, map, 1000)).toBeNull();
+    expect(acceptWinEvent({ type: 'win', name: 'A', machine: 'golden', amount: MAX_PLAY_PAYOUT + 1 }, 3, map, 1000)).toBeNull();
     expect(acceptWinEvent({ type: 'win', name: 'A', machine: 'facade-0', amount: 10 }, 4, map, 1000)).toBeNull();
   });
 });
@@ -141,5 +157,34 @@ _d('knight and ivory outfits', () => {
     _e(k.outfit).toBe('knight');
     _e(_oc(k).armor).toBe(true);
     _e(_oc(_san({ outfit: 'ivory' })).armor).toBeFalsy();
+  });
+});
+
+describe('HUD contrast', () => {
+  it('meets WCAG AA for the documented HUD pairings', () => {
+    for (const pair of HUD_AA_PAIRS) {
+      expect(contrastRatio(pair.fg, pair.bg), pair.role).toBeGreaterThanOrEqual(pair.min);
+    }
+  });
+});
+
+describe('branding', () => {
+  it('does not mention the retired cabinet motif in shipped source', () => {
+    const banned = ['sea', 'horse'].join('');
+    const root = join(__dirname, '..');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        if (name === 'node_modules' || name === 'dist') continue;
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.(ts|tsx|js|css|html|md)$/.test(name)) files.push(path);
+      }
+    };
+    walk(root);
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      expect(text, file).not.toMatch(new RegExp(banned, 'i'));
+    }
   });
 });

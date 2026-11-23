@@ -1,13 +1,14 @@
 # Asset manifest
 
-This prototype does not download meshes, photo textures, HDRIs, or avatar packs.
+This build does not download photo textures, HDRIs, or avatar packs. Materials are original procedural canvases, not CC0 photos and not scans of a real street. If photo textures are added later, credit them here and keep them compressed.
 
 | Item | Source | License |
 | --- | --- | --- |
-| Storefront arches, glass, awnings, fountain, lamps, hedges, trees | Original geometry in `src/lib/storefrontGeo.ts` and `src/components/DistrictView.tsx` | Project code |
-| Paving, park, and plaster textures | Original procedural canvases in `src/lib/textures.ts` | Project code |
-| Player body | Original smooth mannequin in `src/components/Avatar.tsx` | Project code |
-| Seahorse, H mark, jewel, arch, medallion | Original shapes in `src/components/slot/relief.ts`, shaded locally from a height field | Project code |
-| Sign type | `@react-three/drei` `Text` (troika), already a dependency of this app | Package license |
+| Storefronts, awnings, cornices, door frames, fountain, lamps, trees, bench | Original geometry in `src/components/DistrictView.tsx` and `src/lib/storefrontGeo.ts` | Project code |
+| Paving, park, plaster, brick, stone, stucco, marble, wood, velvet | Original procedural canvases in `src/lib/textures.ts` | Project code |
+| Player and NPC bodies | Original stylized mannequins in `src/components/Avatar.tsx` and `src/components/Npc.tsx` | Project code |
+| Golden Hour symbols (gold H, crown, diamond, champagne) | Original height-field drawings in `src/components/slot/relief.ts` | Project code |
+| Sign type | `@react-three/drei` `Text` (troika), already a dependency | Package license |
+| Ambient sound | Original Web Audio oscillators and filtered noise in `src/lib/audio.ts` | Project code |
 
-No photogrammetry, no scanned streets, and no third-party character models. The look is a lit, textured 3D scene with curved storefronts. It is not photoreal.
+No photogrammetry, no scanned streets, and no third-party character models. The look is a lit, textured 3D scene with stylized boutique fronts. It is not photoreal.

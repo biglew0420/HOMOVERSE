@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Scene, type Other } from './components/Scene';
+import { Scene, type NavGoal, type Other } from './components/Scene';
 import { TouchJoystick } from './components/TouchJoystick';
 import { LookPad } from './components/LookPad';
 import { Hud, useLandscape } from './components/Hud';
+import { Interior, MembersBooth, FadeVeil } from './components/Interior';
 import { BUILDINGS } from './lib/buildings';
+import { GOLDEN_HOUR_ID } from './lib/shops';
 import { acceptWinEvent, MAX_PLAY_PAYOUT, type SafeWin } from './lib/winEvent';
 import { useGeolocation } from './hooks/useGeolocation';
 import { DEFAULT_LAYOUT, isLayoutKey, layoutName, type AreaMode, type LayoutKey } from './lib/area';
@@ -16,7 +18,11 @@ import {
   readDemoState,
   writeDemoState,
 } from './lib/demoState';
-import { buildDistrict, districtSignature, nearestPlayable, SPAWN } from './lib/district';
+import { buildDistrict, districtSignature, nearestEnterable, storeById, SPAWN } from './lib/district';
+import { lookInput } from './lib/lookInput';
+import { demoAudio } from './lib/audio';
+import { theme } from './lib/theme';
+import { useHomov } from './hooks/useHomov';
 import { MULTIPLAYER, RoomProvider, useBroadcastEvent, useEventListener, useMyPresence, useOthers, useStatus, type Presence } from './liveblocks';
 
 const OFFLINE_HOLD_MS = 20_000;
@@ -145,25 +151,73 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
   const [layoutKey, setLayoutKey] = useState<LayoutKey>(boot.layoutKey);
   const [avatar, setAvatar] = useState<AvatarStyle>(boot.avatar);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [slotOpen, setSlotOpen] = useState(false);
+  const [boothOpen, setBoothOpen] = useState(false);
+  const [fading, setFading] = useState(false);
+  const [displayName, setDisplayName] = useState(boot.displayName);
+  const [muted, setMuted] = useState(demoAudio.muted);
+  const [nav, setNav] = useState<NavGoal>(null);
   const epoch = useRef(0);
   const [epochTick, setEpochTick] = useState(0);
+  const homov = useHomov();
   useIdle(setMe);
 
   useEffect(() => {
-    writeDemoState(typeof localStorage === 'undefined' ? null : localStorage, { credits, layoutKey, avatar });
-  }, [credits, layoutKey, avatar]);
+    writeDemoState(typeof localStorage === 'undefined' ? null : localStorage, { credits, layoutKey, avatar, displayName });
+  }, [credits, layoutKey, avatar, displayName]);
+
+  useEffect(() => demoAudio.onMute(setMuted), []);
+  useEffect(() => {
+    const bootAudio = () => { void demoAudio.start(); };
+    addEventListener('pointerdown', bootAudio, { once: true });
+    addEventListener('keydown', bootAudio, { once: true });
+    return () => {
+      removeEventListener('pointerdown', bootAudio);
+      removeEventListener('keydown', bootAudio);
+    };
+  }, []);
+  useEffect(() => {
+    if (displayName) setMe({ name: displayName.slice(0, 24) });
+  }, [displayName, setMe]);
 
   const areaMode: AreaMode = geo.cell ? 'gps' : layoutKey === DEFAULT_LAYOUT ? 'default' : 'manual';
   const district = useMemo(
     () => buildDistrict(geo.cell ? geo.cell.seed : layoutKey, geo.cell ? 'Coarse-area procedural district' : layoutName(layoutKey)),
     [geo.cell, layoutKey],
   );
-  const near = useMemo(() => nearestPlayable(me.x, me.z, district), [me.x, me.z, district]);
-  const openStore = district.storefronts.find((store) => store.id === openId && store.playable) ?? null;
+  const near = useMemo(() => nearestEnterable(me.x, me.z, district), [me.x, me.z, district]);
+  const openStore = district.storefronts.find((store) => store.id === openId && store.enterable) ?? null;
+  const memberUnlocked = homov.verified && homov.member;
+  const rank = memberUnlocked ? homov.rank.id : 'guest';
+  useEffect(() => {
+    const lounge = storeById(district, GOLDEN_HOUR_ID);
+    if (!lounge) return;
+    const nearLounge = Math.hypot(me.x - lounge.interactX, me.z - lounge.interactZ) < 5;
+    demoAudio.setNearLounge(nearLounge);
+  }, [district, me.x, me.z]);
 
   useEffect(() => {
     setOpenId(null);
+    setSlotOpen(false);
+    setBoothOpen(false);
   }, [district.seed]);
+
+  const fadeTo = (work: () => void) => {
+    setFading(true);
+    window.setTimeout(() => {
+      work();
+      window.setTimeout(() => setFading(false), 80);
+    }, 420);
+  };
+
+  const goToStore = (id: string, mode: 'walk' | 'jump') => {
+    const store = storeById(district, id);
+    if (!store) return;
+    const dx = store.x - store.interactX;
+    const dz = store.z - store.interactZ;
+    const yaw = Math.atan2(dx, dz);
+    setNav({ x: store.interactX, z: store.interactZ, mode, yaw });
+  };
 
   const onWin = (machineId: string, amount: number) => {
     const building = BUILDINGS.find((b) => b.id === machineId);
@@ -177,7 +231,7 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
   const payout = (amount: number) => {
     if (!Number.isInteger(amount) || amount < 1 || amount > MAX_PLAY_PAYOUT) return;
     setCredits((c) => c + amount);
-    if (openStore) onWin(openStore.id, amount);
+    if (openStore?.playable) onWin(openStore.id, amount);
   };
 
   const reset = () => {
@@ -190,7 +244,10 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
     setAvatar(fresh.avatar);
     setLayoutKey(fresh.layoutKey);
     setOpenId(null);
-    setMe({ x: SPAWN.x, z: SPAWN.z, status: 'active' });
+    setSlotOpen(false);
+    setBoothOpen(false);
+    setDisplayName(fresh.displayName);
+    setMe({ x: SPAWN.x, z: SPAWN.z, status: 'active', name: randomMe().name });
   };
 
   const chooseLayout = (key: LayoutKey) => {
@@ -198,9 +255,14 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
     geo.forget();
     setLayoutKey(key);
     setOpenId(null);
+    setSlotOpen(false);
+    setBoothOpen(false);
   };
 
   const here = others.filter((o) => o.status !== 'offline').length + 1;
+  const overlayOpen = openStore != null || slotOpen || boothOpen || fading;
+
+  const tagColor = !memberUnlocked ? undefined : rank === 'velvet' ? theme.mauve : rank === 'gold' ? theme.goldBright : theme.gold;
 
   return (
     <>
@@ -210,11 +272,17 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
         others={others}
         district={district}
         avatar={avatar}
-        locked={openStore != null}
+        locked={overlayOpen}
         hotId={openStore?.id ?? near?.id ?? null}
+        nav={nav}
+        onArrived={() => setNav(null)}
+        memberBadge={memberUnlocked}
+        tagColor={tagColor}
+        rank={rank}
+        displayName={displayName}
       />
-      {!openStore && <LookPad />}
-      {!openStore && <TouchJoystick disabled={false} size={landscape ? 92 : 112} />}
+      {!overlayOpen && <LookPad />}
+      {!overlayOpen && <TouchJoystick disabled={false} size={landscape ? 92 : 112} />}
       <Hud
         online={online}
         here={here}
@@ -229,17 +297,45 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
         avatar={avatar}
         onAvatar={setAvatar}
         districtSignature={districtSignature(district)}
-        movementLocked={openStore != null}
+        movementLocked={overlayOpen}
         nearName={near?.name ?? null}
-        slotName={openStore?.name ?? null}
-        onOpenSlot={() => { if (near) setOpenId(near.id); }}
-        onCloseSlot={() => setOpenId(null)}
+        nearEnterable={Boolean(near)}
+        slotOpen={slotOpen}
+        onEnterShop={() => { if (near) fadeTo(() => setOpenId(near.id)); }}
+        onCloseSlot={() => setSlotOpen(false)}
         epoch={epochTick}
         onSpend={spend}
         onPayout={payout}
         wins={wins.map((w) => ({ ...w, machine: buildingName(w.machine) }))}
         onReset={reset}
+        muted={muted}
+        onMute={() => demoAudio.toggle()}
+        displayName={displayName}
+        onDisplayName={setDisplayName}
+        onWalkTo={(id) => goToStore(id, 'walk')}
+        onJumpTo={(id) => goToStore(id, 'jump')}
+        homov={homov}
       />
+      {openStore && !slotOpen && !boothOpen && (
+        <Interior
+          shopId={openStore.id}
+          shopName={openStore.name}
+          rank={rank}
+          member={memberUnlocked}
+          onExit={() => fadeTo(() => {
+            const door = storeById(district, openStore.id);
+            setOpenId(null);
+            if (door) {
+              setMe({ x: door.interactX, z: door.interactZ });
+              lookInput.yaw = Math.atan2(door.x - door.interactX, door.z - door.interactZ);
+            }
+          })}
+          onPlay={() => setSlotOpen(true)}
+          onBooth={() => { if (memberUnlocked) setBoothOpen(true); }}
+        />
+      )}
+      {boothOpen && <MembersBooth rank={rank} onExit={() => setBoothOpen(false)} />}
+      <FadeVeil on={fading} />
     </>
   );
 }

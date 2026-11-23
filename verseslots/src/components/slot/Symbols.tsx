@@ -3,11 +3,10 @@ import type { SymbolId } from '../../lib/slotMath';
 import { litCanvas } from './relief';
 
 const LABEL: Record<SymbolId, string> = {
-  seahorse: 'Gold seahorse',
-  hmark: 'Geometric H',
-  jewel: 'Champagne jewel',
-  arch: 'Promenade arch',
-  medallion: 'Gold medallion',
+  hmark: 'Gold H',
+  crown: 'Crown',
+  diamond: 'Diamond',
+  champagne: 'Champagne',
 };
 
 export function SlotSymbol({ id }: { id: SymbolId; size?: number }) {

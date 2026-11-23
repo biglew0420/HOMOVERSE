@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import { Avatar } from './Avatar';
@@ -19,6 +19,11 @@ import { frameStats } from '../lib/frameStats';
 import { lookInput } from '../lib/lookInput';
 import { moveInput } from '../lib/moveInput';
 import type { Presence } from '../liveblocks';
+import { theme } from '../lib/theme';
+import { GuestThought } from './Npc';
+import type { HomovRankId } from '../lib/homov';
+
+export type NavGoal = { x: number; z: number; mode: 'walk' | 'jump'; yaw: number } | null;
 
 export type Other = Presence & { id: number };
 type Sim = { x: number; z: number };
@@ -31,6 +36,12 @@ type Props = {
   avatar: AvatarStyle;
   locked: boolean;
   hotId: string | null;
+  nav: NavGoal;
+  onArrived: () => void;
+  memberBadge?: boolean;
+  tagColor?: string;
+  rank: HomovRankId;
+  displayName: string;
 };
 
 function useKeys() {
@@ -54,11 +65,13 @@ function useKeys() {
   return keys;
 }
 
-function Mover({ setMe, sim, district, locked }: {
+function Mover({ setMe, sim, district, locked, nav, onArrived }: {
   setMe: Props['setMe'];
   sim: React.MutableRefObject<Sim>;
   district: District;
   locked: boolean;
+  nav: NavGoal;
+  onArrived: () => void;
 }) {
   const keys = useKeys();
   const last = useRef(0);
@@ -80,6 +93,33 @@ function Mover({ setMe, sim, district, locked }: {
     frameStats.lastStep = stepDt;
     if (keys.current.q) lookInput.yaw += 1.5 * stepDt;
     if (keys.current.e) lookInput.yaw -= 1.5 * stepDt;
+
+    if (!lockedRef.current && nav) {
+      if (nav.mode === 'jump') {
+        const landed = tryMove(nav.x, nav.z, 0, 0, district.fountain);
+        sim.current.x = landed.x;
+        sim.current.z = landed.z;
+        lookInput.yaw = nav.yaw;
+        setMe({ x: landed.x, z: landed.z, status: 'active' });
+        onArrived();
+        return;
+      }
+      const dx = nav.x - sim.current.x;
+      const dz = nav.z - sim.current.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.18) {
+        lookInput.yaw = nav.yaw;
+        onArrived();
+      } else {
+        const step = Math.min(dist, WALK_SPEED * stepDt);
+        const next = tryMove(sim.current.x, sim.current.z, (dx / dist) * step, (dz / dist) * step, district.fountain);
+        sim.current.x = next.x;
+        sim.current.z = next.z;
+        lookInput.yaw = Math.atan2(-dx, -dz);
+        setMe({ x: next.x, z: next.z, status: 'active' });
+      }
+      return;
+    }
 
     let ax = 0;
     let az = 0;
@@ -125,31 +165,59 @@ function FollowCam({ sim }: { sim: React.MutableRefObject<Sim> }) {
   return null;
 }
 
+function IdleThought({ sim, locked }: { sim: React.MutableRefObject<Sim>; locked: boolean }) {
+  const [show, setShow] = useState(false);
+  const lastMove = useRef(0);
+  useFrame(() => {
+    const moving = Math.hypot(moveInput.x, moveInput.z) > 0.08;
+    const now = performance.now();
+    if (moving || locked) {
+      lastMove.current = now;
+      if (show) setShow(false);
+      return;
+    }
+    if (!show && now - lastMove.current > 5000) setShow(true);
+  });
+  return <GuestThought visible={show && !locked} x={sim.current.x} z={sim.current.z} />;
+}
+
 function remoteStyle(color: string) {
   const n = color.length + color.charCodeAt(0);
   return sanitizeAvatar({ skin: n % 5, hair: 'short', hairColor: n % 5, outfit: 'night' });
 }
 
-export function Scene({ me, setMe, others, district, avatar, locked, hotId }: Props) {
+export function Scene({ me, setMe, others, district, avatar, locked, hotId, nav, onArrived, memberBadge, tagColor, rank, displayName }: Props) {
   const sim = useRef<Sim>({ x: me.x, z: me.z });
   useEffect(() => {
-    lookInput.yaw = Math.atan2(-5.35, -3.8);
+    lookInput.yaw = 0;
   }, []);
+  const lockedRefScene = useRef(locked);
+  useEffect(() => {
+    if (lockedRefScene.current !== locked) {
+      sim.current.x = me.x;
+      sim.current.z = me.z;
+    }
+    lockedRefScene.current = locked;
+  }, [locked, me.x, me.z]);
   return (
     <Canvas
       shadows
       dpr={[1, 1.5]}
-      camera={{ position: [0, 2.05, 12.2], fov: 50, near: 0.08, far: 80 }}
+      camera={{ position: [0, 2.05, SPAWN.z + 4.8], fov: 50, near: 0.08, far: 80 }}
       style={{ touchAction: 'none', width: '100%', height: '100%' }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
-      <color attach="background" args={['#3a3158']} />
-      <fog attach="fog" args={['#3a3158', 18, 52]} />
-      <hemisphereLight args={['#f7ead0', '#243028', 0.72]} />
+      <color attach="background" args={[theme.plum]} />
+      <fog attach="fog" args={[theme.dusk, 16, 48]} />
+      <hemisphereLight args={['#f7ead0', theme.plum, 0.72]} />
       <ambientLight intensity={0.28} />
+      <mesh position={[0, 0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[18, 26, 40]} />
+        <meshBasicMaterial color={theme.gold} transparent opacity={0.18} />
+      </mesh>
       <directionalLight
         position={[14, 18, 8]}
-        intensity={1.45}
+        intensity={1.35}
         color="#ffe2b8"
         castShadow
         shadow-mapSize-width={1024}
@@ -162,14 +230,11 @@ export function Scene({ me, setMe, others, district, avatar, locked, hotId }: Pr
         shadow-camera-bottom={-22}
         shadow-bias={-0.0006}
       />
-      <mesh position={[18, 16, -10]}>
-        <sphereGeometry args={[1.4, 24, 16]} />
-        <meshBasicMaterial color="#f4efe2" />
-      </mesh>
-      <DistrictView district={district} hotId={hotId} />
-      <Mover setMe={setMe} sim={sim} district={district} locked={locked} />
+      <DistrictView district={district} hotId={hotId} player={{ x: me.x, z: me.z }} rank={rank} />
+      <Mover setMe={setMe} sim={sim} district={district} locked={locked} nav={nav} onArrived={onArrived} />
       <FollowCam sim={sim} />
-      <Avatar sim={sim} x={me.x} z={me.z} style={avatar} name="" status={me.status} showLabel={false} />
+      <IdleThought sim={sim} locked={locked} />
+      <Avatar sim={sim} x={me.x} z={me.z} style={avatar} name={displayName} status={me.status} showLabel={Boolean(displayName)} memberBadge={memberBadge} tagColor={tagColor} />
       {others.map((other) => (
         <Avatar key={other.id} x={other.x} z={other.z} style={remoteStyle(other.color)} name={other.name} status={other.status} />
       ))}

@@ -1,9 +1,9 @@
 # HOMOVERSE
 
-`verseslots/` is a local open-air district prototype. Walk a synthetic promenade, edit a stylized avatar, and play with demo credits. Demo credits are not HOMO tokens. Location is optional. This tree is not a production deploy.
+`verseslots/` is the walking-mall prototype: an open-air ring of shops around a dusk plaza, enterable interiors, and a Golden Hour demo slot. Demo credits are not HOMO tokens. HOMOV membership, when used, is a read-only Base balance check. Location is optional.
 
 ```bash
 cd verseslots && npm install && npm test && npm run dev
 ```
 
-a world where homotokens meets homoVERSE
+A world where the House of HOMO has a door you can walk through.

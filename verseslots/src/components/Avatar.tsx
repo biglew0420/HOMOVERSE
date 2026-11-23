@@ -18,6 +18,8 @@ export function Avatar({
   status,
   sim,
   showLabel = true,
+  memberBadge = false,
+  tagColor,
 }: {
   x: number;
   z: number;
@@ -26,6 +28,8 @@ export function Avatar({
   status: keyof typeof STATUS;
   sim?: React.MutableRefObject<Sim>;
   showLabel?: boolean;
+  memberBadge?: boolean;
+  tagColor?: string;
 }) {
   const group = useRef<Group>(null);
   const colors = outfitColors(style);
@@ -40,7 +44,8 @@ export function Avatar({
     if (!body) return;
     if (sim) {
       const moving = Math.hypot(moveInput.x, moveInput.z) > 0.08;
-      body.position.set(sim.current.x, moving ? Math.sin(state.clock.elapsedTime * 8) * 0.025 : 0, sim.current.z);
+      const breathe = Math.sin(state.clock.elapsedTime * 1.7) * 0.015;
+      body.position.set(sim.current.x, moving ? Math.sin(state.clock.elapsedTime * 8) * 0.025 : breathe, sim.current.z);
       body.rotation.y = lookInput.yaw + Math.PI;
     } else {
       body.position.set(x, 0, z);
@@ -154,9 +159,15 @@ export function Avatar({
           </mesh>
         </group>
       )}
+      {memberBadge && (
+        <mesh position={[0.18, 1.42, 0.16]} castShadow>
+          <boxGeometry args={[0.07, 0.09, 0.03]} />
+          <meshStandardMaterial color="#C9A45B" metalness={0.9} roughness={0.22} emissive="#C9A45B" emissiveIntensity={0.25} />
+        </mesh>
+      )}
       <mesh position={[0, 1.82, 0]}>
         <sphereGeometry args={[0.035, 12, 10]} />
-        <meshBasicMaterial color={STATUS[status]} />
+        <meshBasicMaterial color={tagColor ?? STATUS[status]} />
       </mesh>
       {showLabel && name && <Html position={[0, 1.98, 0]} center zIndexRange={[2, 0]} style={{ fontSize: 11, whiteSpace: 'nowrap', color: '#f6edd6', textShadow: '0 1px 2px #000', pointerEvents: 'none' }}>{name}</Html>}
     </group>

@@ -9,7 +9,7 @@ import {
 } from '../lib/slotMath';
 import { SlotSymbol } from './slot/Symbols';
 
-const SAMPLE: [SymbolId, SymbolId, SymbolId] = ['seahorse', 'jewel', 'seahorse'];
+const SAMPLE: [SymbolId, SymbolId, SymbolId] = ['champagne', 'crown', 'champagne'];
 
 function prefersReducedMotion() {
   return typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -23,7 +23,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
   onPayout: (amount: number) => void;
   onClose: () => void;
 }) {
-  const [reels, setReels] = useState<[SymbolId, SymbolId, SymbolId]>(['hmark', 'jewel', 'arch']);
+  const [reels, setReels] = useState<[SymbolId, SymbolId, SymbolId]>(['hmark', 'crown', 'diamond']);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState('Press spin. Stake is 1 demo credit.');
   const [feature, setFeature] = useState<'off' | 'sample' | 'live'>('off');
@@ -90,6 +90,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
             radial-gradient(120% 90% at 50% 42%, transparent 46%, rgba(0,0,0,.55) 100%),
             linear-gradient(102deg, transparent 0 28%, rgba(255,236,200,.07) 46%, transparent 62%),
             radial-gradient(80% 24% at 18% 0%, rgba(255,244,214,.12), transparent 70%),
+            radial-gradient(70% 40% at 80% 0%, rgba(232,184,200,.08), transparent 60%),
             #070605;
           overflow: auto;
         }
@@ -231,7 +232,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
         }
       `}</style>
       <div className="topbar">
-        <button type="button" className="ghost" data-testid="close-slot" onClick={onClose}>Close and walk</button>
+        <button type="button" className="ghost" data-testid="close-slot" onClick={onClose}>Back to the lounge</button>
         <span data-testid="credits">DEMO CREDITS: {credits}</span>
       </div>
       <div className="brandrow">
@@ -241,7 +242,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
       </div>
       <div className="paytable" data-testid="paytable" aria-label="Demo paytable">
         {PAYTABLE.map((line) => (
-          <div key={line.id} className={`panel ${feature !== 'off' && line.id === 'seahorse' ? 'active' : ''}`}>
+          <div key={line.id} className={`panel ${feature !== 'off' && line.id === 'champagne' ? 'active' : ''}`}>
             <i className="sheen" aria-hidden="true" />
             <strong>{line.multiplier}×</strong>
             <span>{line.label}</span>
@@ -256,7 +257,7 @@ export function SlotMachine({ name, credits, epoch, onSpend, onPayout, onClose }
         ))}
       </div>
       <div className="feature-line" aria-live="polite">
-        {feature === 'live' && 'Seahorse feature ×2 applied to this spin.'}
+        {feature === 'live' && 'Champagne feature ×2 applied to this spin.'}
         {feature === 'sample' && 'Sample feature. The balance did not change.'}
         {feature === 'off' && 'Demo paytable only. These multipliers are what a spin can pay.'}
       </div>
