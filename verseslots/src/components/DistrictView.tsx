@@ -1,144 +1,105 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Text } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { Color, MeshStandardMaterial, type Group, type Mesh, type PointLight } from 'three';
-import type { District, Storefront } from '../lib/district';
+import { Color, type Group, type Mesh, type MeshStandardMaterial, type PointLight } from 'three';
+import type { District } from '../lib/district';
 import { BENCH, FOUNTAIN_RADIUS, hashString } from '../lib/district';
-import { getDistrictTextures } from '../lib/textures';
+import { disposePlazaMaterials, ensureUv2, loadPlazaMaterials, proceduralPlazaMaterials, type PlazaMaterials } from '../lib/pbr';
 import { theme } from '../lib/theme';
-import { GOLDEN_HOUR_ID } from '../lib/shops';
 import { NpcFigures } from './Npc';
+import { StorefrontMesh } from './Storefront';
 import type { HomovRankId } from '../lib/homov';
+import type { QualitySettings } from '../lib/quality';
 
 function hashSeed(seed: string): number {
   return hashString(seed);
 }
 
-function StorefrontMesh({
-  store,
-  hot,
-  mats,
-}: {
-  store: Storefront;
-  hot: boolean;
-  mats: Record<'brick' | 'stone' | 'stucco' | 'gold' | 'glass' | 'wood', MeshStandardMaterial>;
-}) {
-  const body = mats[store.material];
-  const windowColor = hot ? theme.icyPink : theme.blush;
-  return (
-    <group position={[store.x, 0, store.z]} rotation={[0, store.rotY, 0]}>
-      <mesh position={[0, store.h / 2, -store.d / 2]} material={body} castShadow receiveShadow>
-        <boxGeometry args={[store.w, store.h, store.d]} />
-      </mesh>
-      {/* Cornice */}
-      <mesh position={[0, store.h + 0.08, 0.08]} castShadow>
-        <boxGeometry args={[store.w + 0.25, 0.16, 0.5]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
-      </mesh>
-      {/* Awning */}
-      <mesh position={[0, store.h * 0.62, 0.62]} rotation={[-0.28, 0, 0]} castShadow>
-        <boxGeometry args={[store.w * 0.92, 0.06, 1.15]} />
-        <meshStandardMaterial color={store.awningColor} roughness={0.7} />
-      </mesh>
-      <mesh position={[0, store.h * 0.62 - 0.18, 1.05]} castShadow>
-        <boxGeometry args={[store.w * 0.92, 0.22, 0.06]} />
-        <meshStandardMaterial color={store.awningColor} roughness={0.65} />
-      </mesh>
-      {/* Window */}
-      <mesh position={[-store.w * 0.18, store.h * 0.42, 0.08]} material={mats.glass} castShadow>
-        <boxGeometry args={[store.w * 0.42, store.h * 0.42, 0.08]} />
-      </mesh>
-      <mesh position={[-store.w * 0.18, store.h * 0.42, -0.2]}>
-        <planeGeometry args={[store.w * 0.38, store.h * 0.38]} />
-        <meshStandardMaterial color="#1a120e" emissive={windowColor} emissiveIntensity={hot ? 0.7 : 0.4} />
-      </mesh>
-      {/* Door frame */}
-      <mesh position={[store.w * 0.28, 1.15, 0.1]} castShadow>
-        <boxGeometry args={[0.9, 2.3, 0.12]} />
-        <meshStandardMaterial color={theme.ink} metalness={0.2} roughness={0.5} />
-      </mesh>
-      <mesh position={[store.w * 0.28, 1.15, 0.16]}>
-        <boxGeometry args={[0.7, 2.05, 0.06]} />
-        <meshStandardMaterial color="#1c140f" metalness={0.15} roughness={0.4} emissive={theme.gold} emissiveIntensity={0.08} />
-      </mesh>
-      <mesh position={[store.w * 0.18, 1.2, 0.22]}>
-        <sphereGeometry args={[0.04, 10, 8]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.85} roughness={0.25} />
-      </mesh>
-      {/* Sign band */}
-      <mesh position={[0, store.h * 0.86, 0.18]} castShadow>
-        <boxGeometry args={[store.w * 0.86, 0.42, 0.1]} />
-        <meshStandardMaterial color={theme.black} metalness={0.2} roughness={0.4} />
-      </mesh>
-      <Text position={[0, store.h * 0.86, 0.26]} fontSize={0.22} color={store.signColor} anchorX="center" maxWidth={store.w * 0.8}>
-        {store.name}
-      </Text>
-      {store.id === GOLDEN_HOUR_ID && (
-        <Text position={[0, store.h * 0.74, 0.26]} fontSize={0.14} color={theme.ivory} anchorX="center">
-          DEMO SLOT · GOLDEN HOUR
-        </Text>
-      )}
-    </group>
-  );
+function usePlazaMaterials(seed: number, anisotropy: number): PlazaMaterials {
+  const [mats, setMats] = useState(() => proceduralPlazaMaterials(seed));
+  useEffect(() => {
+    let cancelled = false;
+    const fallback = proceduralPlazaMaterials(seed);
+    setMats(fallback);
+    void loadPlazaMaterials(seed, anisotropy).then((next) => {
+      if (cancelled) {
+        disposePlazaMaterials(next);
+        return;
+      }
+      setMats(next);
+      if (next !== fallback) disposePlazaMaterials(fallback);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [seed, anisotropy]);
+  return mats;
 }
 
-function Fountain() {
+function Fountain({ mats, quality }: { mats: PlazaMaterials; quality: QualitySettings }) {
   const water = useRef<Group>(null);
   const light = useRef<PointLight>(null);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (water.current) {
-      water.current.rotation.y = t * 0.35;
-      water.current.position.y = 0.55 + Math.sin(t * 1.6) * 0.04;
+      water.current.rotation.y = t * 0.45;
+      water.current.position.y = 0.58 + Math.sin(t * 1.8) * 0.035;
     }
     if (light.current) {
-      light.current.intensity = 1.1 + Math.sin(t * 2.2) * 0.25;
+      light.current.intensity = 1.15 + Math.sin(t * 2.2) * 0.28;
     }
   });
+  const segs = quality.circleSegments;
   return (
     <group>
-      <mesh position={[0, 0.22, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[FOUNTAIN_RADIUS, FOUNTAIN_RADIUS + 0.18, 0.44, 40]} />
-        <meshStandardMaterial color={theme.marble} roughness={0.28} metalness={0.18} />
+      <mesh position={[0, 0.16, 0]} material={mats.marble} castShadow receiveShadow>
+        <cylinderGeometry args={[FOUNTAIN_RADIUS + 0.35, FOUNTAIN_RADIUS + 0.5, 0.32, segs]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
-      <mesh position={[0, 0.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[FOUNTAIN_RADIUS, 0.06, 12, 40]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.82} roughness={0.25} />
+      <mesh position={[0, 0.38, 0]} material={mats.marble} castShadow receiveShadow>
+        <cylinderGeometry args={[FOUNTAIN_RADIUS, FOUNTAIN_RADIUS + 0.12, 0.36, segs]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
-      <mesh position={[0, 0.62, 0]} castShadow>
-        <boxGeometry args={[0.18, 1.15, 0.08]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.8} roughness={0.28} />
+      <mesh position={[0, 0.56, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[FOUNTAIN_RADIUS, 0.055, 10, segs]} />
+        <meshStandardMaterial color={theme.gold} metalness={0.86} roughness={0.22} envMapIntensity={1.1} />
       </mesh>
-      <mesh position={[0.16, 0.62, 0]} castShadow>
-        <boxGeometry args={[0.18, 1.15, 0.08]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.8} roughness={0.28} />
+      <mesh position={[0, 0.78, 0]} material={mats.marble} castShadow receiveShadow>
+        <cylinderGeometry args={[0.42, 0.5, 0.28, 24]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
-      <mesh position={[0.08, 0.62, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <boxGeometry args={[0.18, 0.42, 0.08]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.8} roughness={0.28} />
+      {/* Gold H monogram, stacked from bars */}
+      <mesh position={[-0.07, 1.15, 0]} castShadow>
+        <boxGeometry args={[0.16, 1.05, 0.08]} />
+        <meshStandardMaterial color={theme.gold} metalness={0.88} roughness={0.22} />
       </mesh>
-      <mesh position={[0.08, 0.62, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
-        <boxGeometry args={[0.16, 0.16, 0.06]} />
-        <meshStandardMaterial color={theme.ivory} metalness={0.5} roughness={0.3} />
+      <mesh position={[0.15, 1.15, 0]} castShadow>
+        <boxGeometry args={[0.16, 1.05, 0.08]} />
+        <meshStandardMaterial color={theme.gold} metalness={0.88} roughness={0.22} />
+      </mesh>
+      <mesh position={[0.04, 1.15, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <boxGeometry args={[0.16, 0.38, 0.08]} />
+        <meshStandardMaterial color={theme.gold} metalness={0.88} roughness={0.22} />
       </mesh>
       <group ref={water}>
-        {[0.55, 0.75, 0.95].map((r, i) => (
-          <mesh key={r} position={[0, 0.08 * i, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[r, 0.05, 8, 28]} />
-            <meshStandardMaterial color="#8ad4e0" transparent opacity={0.35} roughness={0.08} metalness={0.2} />
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.85, segs]} />
+          <meshStandardMaterial color="#7ecfe0" transparent opacity={0.55} roughness={0.08} metalness={0.25} envMapIntensity={1.2} />
+        </mesh>
+        {[0.5, 0.7, 0.9].map((r, i) => (
+          <mesh key={r} position={[0, 0.06 * i, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[r, 0.045, 8, 28]} />
+            <meshStandardMaterial color="#8ad4e0" transparent opacity={0.32} roughness={0.08} metalness={0.2} />
           </mesh>
         ))}
       </group>
-      <pointLight ref={light} position={[0, 1.4, 0]} color={theme.gold} intensity={1.2} distance={8} />
-      <pointLight position={[0, 1.1, 0]} color={theme.coolRose} intensity={0.35} distance={6} />
-      <Text position={[0, 1.45, 0]} fontSize={0.16} color={theme.gold} anchorX="center">
+      <pointLight ref={light} position={[0, 1.45, 0]} color={theme.gold} intensity={1.2} distance={8} />
+      <pointLight position={[0, 1.15, 0]} color={theme.coolRose} intensity={0.4} distance={6} />
+      <Text position={[0, 1.78, 0]} fontSize={0.15} color={theme.gold} anchorX="center">
         H
       </Text>
     </group>
   );
 }
 
-function Lamps({ spots }: { spots: District['lamps'] }) {
+function Lamps({ spots, quality, player }: { spots: District['lamps']; quality: QualitySettings; player: { x: number; z: number } }) {
   const bulbs = useRef<Mesh[]>([]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -148,32 +109,45 @@ function Lamps({ spots }: { spots: District['lamps'] }) {
       mat.emissiveIntensity = 0.85 + Math.sin(t * 7 + i * 1.7) * 0.12 + Math.sin(t * 13 + i) * 0.05;
     });
   });
+  const lit = useMemo(() => {
+    const ranked = [...spots].sort((a, b) => (
+      Math.hypot(player.x - a.x, player.z - a.z) - Math.hypot(player.x - b.x, player.z - b.z)
+    ));
+    return new Set(ranked.slice(0, quality.lampLights).map((lamp) => `${lamp.x}:${lamp.z}`));
+  }, [spots, player.x, player.z, quality.lampLights]);
   return (
     <>
       {spots.map((lamp, i) => (
         <group key={`${lamp.x}:${lamp.z}`} position={[lamp.x, 0, lamp.z]}>
           <mesh position={[0, 1.5, 0]} castShadow>
-            <cylinderGeometry args={[0.035, 0.05, 3, 12]} />
-            <meshStandardMaterial color={theme.ink} metalness={0.6} roughness={0.35} />
+            <cylinderGeometry args={[0.035, 0.05, 3, quality.treeSegments]} />
+            <meshStandardMaterial color={theme.ink} metalness={0.65} roughness={0.32} />
+          </mesh>
+          <mesh position={[0, 3.12, 0]} rotation={[Math.PI, 0, 0]} castShadow>
+            <coneGeometry args={[0.22, 0.16, 12]} />
+            <meshStandardMaterial color={theme.gold} metalness={0.8} roughness={0.28} />
           </mesh>
           <mesh
-            position={[0, 3.05, 0]}
+            position={[0, 3.0, 0]}
             ref={(node) => { if (node) bulbs.current[i] = node; }}
           >
             <sphereGeometry args={[0.11, 16, 12]} />
             <meshStandardMaterial color="#f0d78c" emissive={theme.gold} emissiveIntensity={0.9} />
           </mesh>
-          <mesh position={[0, 3.08, 0]}>
+          <mesh position={[0, 3.02, 0]}>
             <sphereGeometry args={[0.16, 12, 10]} />
             <meshStandardMaterial color={theme.coolRose} transparent opacity={0.12} emissive={theme.blush} emissiveIntensity={0.3} />
           </mesh>
+          {lit.has(`${lamp.x}:${lamp.z}`) && (
+            <pointLight position={[0, 2.9, 0]} color="#ffd9a0" intensity={0.65} distance={6.5} />
+          )}
         </group>
       ))}
     </>
   );
 }
 
-function Dust() {
+function Dust({ on }: { on: boolean }) {
   const pts = useMemo(() => {
     const count = 90;
     const positions = new Float32Array(count * 3);
@@ -197,6 +171,7 @@ function Dust() {
   useFrame(({ clock }) => {
     if (ref.current) ref.current.position.y = Math.sin(clock.elapsedTime * 0.25) * 0.15;
   });
+  if (!on) return null;
   return (
     <group ref={ref}>
       <points>
@@ -210,7 +185,7 @@ function Dust() {
   );
 }
 
-function SkyParallax() {
+function SkyParallax({ on }: { on: boolean }) {
   const group = useRef<Group>(null);
   useFrame(({ clock, camera }) => {
     if (!group.current) return;
@@ -218,6 +193,7 @@ function SkyParallax() {
     group.current.position.z = camera.position.z * 0.04;
     group.current.rotation.y = clock.elapsedTime * 0.01;
   });
+  if (!on) return null;
   return (
     <group ref={group}>
       <mesh position={[0, 18, -16]}>
@@ -241,81 +217,62 @@ export function DistrictView({
   hotId,
   player,
   rank,
+  quality,
 }: {
   district: District;
   hotId: string | null;
   player: { x: number; z: number };
   rank: HomovRankId;
+  quality: QualitySettings;
 }) {
-  const textures = useMemo(() => getDistrictTextures(hashSeed(district.seed)), [district.seed]);
-  const mats = useMemo(() => ({
-    brick: new MeshStandardMaterial({ map: textures.brick, roughness: 0.9, metalness: 0.04 }),
-    stone: new MeshStandardMaterial({ map: textures.stone, roughness: 0.82, metalness: 0.08 }),
-    stucco: new MeshStandardMaterial({ map: textures.stucco, roughness: 0.88, metalness: 0.03 }),
-    gold: new MeshStandardMaterial({ color: theme.gold, metalness: 0.72, roughness: 0.3, emissive: theme.goldTrim, emissiveIntensity: 0.12 }),
-    glass: new MeshStandardMaterial({
-      color: '#c8b0b8',
-      metalness: 0.55,
-      roughness: 0.08,
-      transparent: true,
-      opacity: 0.45,
-      emissive: theme.icyPink,
-      emissiveIntensity: 0.2,
-    }),
-    wood: new MeshStandardMaterial({ map: textures.wood, roughness: 0.8 }),
-  }), [textures]);
-  useEffect(() => () => {
-    Object.values(mats).forEach((m) => m.dispose());
-  }, [mats]);
-
+  const mats = usePlazaMaterials(hashSeed(district.seed), quality.anisotropy);
   return (
     <group>
-      <mesh rotation-x={-Math.PI / 2} receiveShadow>
-        <circleGeometry args={[22, 64]} />
-        <meshStandardMaterial map={textures.park} roughness={1} />
+      <mesh rotation-x={-Math.PI / 2} material={mats.park} receiveShadow>
+        <circleGeometry args={[22, quality.circleSegments]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
-      <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2} receiveShadow>
-        <circleGeometry args={[9.2, 64]} />
-        <meshStandardMaterial map={textures.paving} roughness={0.9} />
+      <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2} material={mats.paving} receiveShadow>
+        <circleGeometry args={[9.2, quality.circleSegments]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
       <mesh position={[0, 0.03, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[7.6, 8.9, 64]} />
+        <ringGeometry args={[7.6, 8.9, quality.circleSegments]} />
         <meshStandardMaterial color={theme.gold} transparent opacity={0.12} />
       </mesh>
-      <Fountain />
-      <Lamps spots={district.lamps} />
+      <Fountain mats={mats} quality={quality} />
+      <Lamps spots={district.lamps} quality={quality} player={player} />
       {district.trees.map((tree) => (
         <group key={`${tree.x}:${tree.z}`} position={[tree.x, 0, tree.z]} scale={tree.scale}>
-          <mesh position={[0, 0.85, 0]} castShadow>
-            <cylinderGeometry args={[0.09, 0.14, 1.5, 12]} />
-            <meshStandardMaterial color="#4a3428" roughness={0.9} />
+          <mesh position={[0, 0.85, 0]} material={mats.wood} castShadow>
+            <cylinderGeometry args={[0.09, 0.14, 1.5, quality.treeSegments]} onUpdate={(g) => ensureUv2(g)} />
           </mesh>
           <mesh position={[0, 1.85, 0]} castShadow>
-            <sphereGeometry args={[0.78, 20, 14]} />
+            <sphereGeometry args={[0.72, quality.treeSegments, Math.max(8, quality.treeSegments - 2)]} />
             <meshStandardMaterial color="#234232" roughness={0.82} />
+          </mesh>
+          <mesh position={[0.28, 1.7, 0.1]} castShadow>
+            <sphereGeometry args={[0.4, quality.treeSegments, 8]} />
+            <meshStandardMaterial color="#2b5540" roughness={0.82} />
           </mesh>
         </group>
       ))}
       <group position={[BENCH.x, 0, BENCH.z]} rotation={[0, BENCH.rotY, 0]}>
-        <mesh position={[0, 0.42, 0]} castShadow receiveShadow>
-          <boxGeometry args={[1.6, 0.08, 0.48]} />
-          <meshStandardMaterial color={theme.ink} roughness={0.5} />
+        <mesh position={[0, 0.42, 0]} material={mats.wood} castShadow receiveShadow>
+          <boxGeometry args={[1.6, 0.08, 0.48]} onUpdate={(g) => ensureUv2(g)} />
         </mesh>
-        <mesh position={[0, 0.7, -0.2]} castShadow>
-          <boxGeometry args={[1.6, 0.4, 0.08]} />
-          <meshStandardMaterial color={theme.ink} roughness={0.5} />
+        <mesh position={[0, 0.7, -0.2]} material={mats.wood} castShadow>
+          <boxGeometry args={[1.6, 0.4, 0.08]} onUpdate={(g) => ensureUv2(g)} />
         </mesh>
         <mesh position={[-0.7, 0.22, 0]} castShadow>
           <boxGeometry args={[0.08, 0.44, 0.48]} />
-          <meshStandardMaterial color={theme.gold} metalness={0.6} roughness={0.35} />
+          <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
         </mesh>
         <mesh position={[0.7, 0.22, 0]} castShadow>
           <boxGeometry args={[0.08, 0.44, 0.48]} />
-          <meshStandardMaterial color={theme.gold} metalness={0.6} roughness={0.35} />
+          <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
         </mesh>
       </group>
       {district.storefronts.map((store) => (
-        <StorefrontMesh key={store.id} store={store} hot={store.id === hotId} mats={mats} />
+        <StorefrontMesh key={store.id} store={store} hot={store.id === hotId} mats={mats} quality={quality} player={player} />
       ))}
       {district.storefronts.filter((store) => store.id === 'members').map((store) => {
         const dx = store.interactX - store.x;
@@ -342,8 +299,8 @@ export function DistrictView({
           </group>
         );
       })}
-      <Dust />
-      <SkyParallax />
+      <Dust on={quality.dust} />
+      <SkyParallax on={!quality.env} />
       <NpcFigures district={district} player={player} rank={rank} />
       <Text position={[0, 0.08, 2.4]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.28} color={theme.gold} anchorX="center">
         HOUSE OF HOMO

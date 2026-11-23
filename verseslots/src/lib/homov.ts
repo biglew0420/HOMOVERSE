@@ -46,6 +46,13 @@ export function normalizeAddress(value: string): string | null {
   return text.toLowerCase();
 }
 
+/** Case-insensitive 0x comparison. Used to make sure a signature comes from the looked-up account. */
+export function sameAddress(a: string, b: string): boolean {
+  const left = normalizeAddress(a);
+  const right = normalizeAddress(b);
+  return Boolean(left && right && left === right);
+}
+
 /** Parse an eth_call uint256 hex result into a decimal HOMOV amount. */
 export function parseTokenBalance(hex: string, decimals = HOMOV_CONFIG.decimals): number {
   const raw = hex.trim().toLowerCase();

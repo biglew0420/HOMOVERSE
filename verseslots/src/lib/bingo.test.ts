@@ -10,10 +10,11 @@ import {
   generateCard,
   hasBingo,
   initialDaubed,
+  resetBingoRound,
   tryDaub,
   usesGoldCoinSkin,
 } from './bingo';
-import { DAUBER_STORAGE_KEY, loadDauberState, refillDaubers, serializeDauberState, spendDauber } from './daubers';
+import { DAUBER_STORAGE_KEY, applyRankPack, loadDauberState, refillDaubers, serializeDauberState, spendDauber } from './daubers';
 
 describe('Homo Bingo branding', () => {
   it('is named Homo Bingo and never spends real HOMOV', () => {
@@ -124,5 +125,45 @@ describe('demo daubers', () => {
     expect(spent?.count).toBe(1);
     const refilled = refillDaubers({ count: 1, day: '2026-11-22', lastDaily: '2026-11-22' }, 'guest', false);
     expect(refilled.count).toBe(25);
+  });
+});
+
+describe('card uniqueness and reset', () => {
+  it('never repeats a callId on a card, including the two O columns, across many seeds', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const card = generateCard(seed);
+      const ids = card.map((c) => c.callId);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(card).toHaveLength(25);
+    }
+  });
+
+  it('resets daubs to the free center on a new card', () => {
+    const first = generateCard(11);
+    const marked = initialDaubed(first);
+    marked.add(first[0].id);
+    expect(marked.size).toBeGreaterThan(1);
+    const next = resetBingoRound(12);
+    expect(next.card).toHaveLength(25);
+    expect(next.daubed.size).toBe(1);
+    expect(next.daubed.has('free-center')).toBe(true);
+    expect(next.card[0].callId === first[0].callId && next.card.every((c, i) => c.callId === first[i].callId)).toBe(false);
+  });
+});
+
+describe('rank pack top-up', () => {
+  it('adds only the pack-size difference when a verified rank is granted the same day', () => {
+    const guest = loadDauberState(JSON.stringify({ count: 10, lastDaily: '2099-01-01', packGranted: 25 }), 'guest', false);
+    // lastDaily not today, so this becomes a fresh daily pack. Use applyRankPack on a same-day state instead:
+    const midDay = applyRankPack({ count: 10, day: '2026-11-22', lastDaily: '2026-11-22', packGranted: 25 }, 'member', true);
+    expect(midDay.count).toBe(15);
+    expect(midDay.packGranted).toBe(30);
+    const gold = applyRankPack(midDay, 'gold', true);
+    expect(gold.count).toBe(20);
+    expect(gold.packGranted).toBe(35);
+    const again = applyRankPack(gold, 'gold', true);
+    expect(again.count).toBe(20);
+    const unverified = applyRankPack({ count: 10, day: '2026-11-22', lastDaily: '2026-11-22', packGranted: 25 }, 'velvet', false);
+    expect(unverified.count).toBe(10);
   });
 });

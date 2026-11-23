@@ -12,14 +12,14 @@ import {
   drawCall,
   generateCard,
   hasBingo,
-  initialDaubed,
+  resetBingoRound,
   tryDaub,
   usesGoldCoinSkin,
   type BingoCall,
   type BingoCell,
   type HomovCosmeticRank,
 } from '../lib/bingo';
-import { DAUBER_DISCLAIMER as DAUBER_COPY, readDaubers, refillDaubers, writeDaubers } from '../lib/daubers';
+import { DAUBER_DISCLAIMER as DAUBER_COPY, applyRankPack, readDaubers, refillDaubers, writeDaubers } from '../lib/daubers';
 import { theme } from '../lib/theme';
 import { demoAudio } from '../lib/audio';
 import { SlotSymbol } from './slot/Symbols';
@@ -97,9 +97,13 @@ function Confetti() {
 export function Bingo({ rank, verified, onClose, onReward }: Props) {
   const pack = dauberPackSize(rank, verified);
   const goldSkin = usesGoldCoinSkin(rank, verified);
-  const [card] = useState(() => generateCard(Date.now()));
-  const [daubed, setDaubed] = useState(() => initialDaubed(card));
-  const [daubers, setDaubers] = useState(() => readDaubers(storage(), rank, verified).count);
+  const [card, setCard] = useState(() => generateCard(Date.now()));
+  const [daubed, setDaubed] = useState(() => new Set(['free-center']));
+  const [daubers, setDaubers] = useState(() => {
+    const aligned = applyRankPack(readDaubers(storage(), rank, verified), rank, verified);
+    writeDaubers(storage(), aligned);
+    return aligned.count;
+  });
   const [remaining, setRemaining] = useState(() => [...CALL_POOL]);
   const [called, setCalled] = useState<BingoCall[]>([]);
   const [calledIds, setCalledIds] = useState<Set<string>>(new Set());
@@ -165,6 +169,20 @@ export function Bingo({ rank, verified, onClose, onReward }: Props) {
     demoAudio.click();
   };
 
+  const newCard = () => {
+    const next = resetBingoRound(Date.now() ^ Math.floor(Math.random() * 1e9));
+    setCard(next.card);
+    setDaubed(next.daubed);
+    setRemaining([...CALL_POOL]);
+    setCalled([]);
+    setCalledIds(new Set());
+    setWon(false);
+    rewarded.current = false;
+    setSpeech('New card. Demo play only.');
+    setMessage('');
+    demoAudio.click();
+  };
+
   return (
     <div
       data-testid="bingo-sheet"
@@ -192,6 +210,7 @@ export function Bingo({ rank, verified, onClose, onReward }: Props) {
           <Coin goldSkin={goldSkin} /> Demo HOMOV daubers: {daubers}
         </span>
         <button type="button" data-testid="refill-daubers" onClick={refill}>Refill free ({pack})</button>
+        <button type="button" data-testid="new-bingo-card" onClick={newCard}>New card</button>
       </div>
       <div
         data-testid="bingo-caller"
@@ -247,7 +266,7 @@ export function Bingo({ rank, verified, onClose, onReward }: Props) {
                     <SlotSymbol id={symbolId} size={22} />
                   </span>
                 )}
-                {!daubed && <span>{cell.kind === 'free' ? 'FREE' : cell.label}</span>}
+                {!marked && <span>{cell.kind === 'free' ? 'FREE' : cell.label}</span>}
                 {marked && (
                   <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: '#0005', borderRadius: 8 }}>
                     <Coin goldSkin={goldSkin} size={26} />

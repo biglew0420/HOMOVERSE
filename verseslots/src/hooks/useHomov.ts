@@ -5,6 +5,7 @@ import {
   rankFromBalance,
   readHomovBalanceCached,
   resolveAddressOrName,
+  sameAddress,
   type HomovRank,
 } from '../lib/homov';
 
@@ -123,6 +124,16 @@ export function useHomov(): HomovState & {
       return;
     }
     try {
+      const accounts = await eth.request({ method: 'eth_requestAccounts' });
+      const list = Array.isArray(accounts) ? accounts : [];
+      const account = typeof list[0] === 'string' ? list[0] : '';
+      if (!sameAddress(account, state.address)) {
+        setState((s) => ({
+          ...s,
+          error: 'The connected wallet does not match this address. A pasted lookup stays a preview until the same wallet signs. This never moves tokens.',
+        }));
+        return;
+      }
       await eth.request({
         method: 'personal_sign',
         params: [

@@ -27,7 +27,8 @@ Open the URL Vite prints (usually `http://localhost:5173`). Optional Liveblocks 
 - Stand at a door and tap **Enter**. A short fade takes you inside. **Exit** returns you to the door.
 - Enterable shops: Golden Hour Lounge (demo slot inside), The Tailor, The Café, Members' Lounge (home of **Homo Bingo**), and homoGAP (link to the real merch shop, new tab). Other façades are window-shopping only.
 - Laurent greets at the Golden Hour door, Jules Wren keeps the Tailor, Wes Holloway sits the plaza bench. Thought bubbles are light and not about money.
-- **User** holds your local name, avatar shortcut, demo balance, mute, and the read-only HOMOV tools (Connect wallet, or paste an address / basename). Accounts coming soon.
+- **User** holds your local name, avatar shortcut, demo balance, mute, and the read-only HOMOV tools (Connect wallet, or paste an address / basename). A pasted address is a preview; use **Prove wallet** (a free `personal_sign`, no gas) or connect the matching wallet to wear the badge and enter the Members' Booth. Accounts coming soon.
+- **Quality** is High, Medium, or Low. High uses the dusk HDRI, shadows, SSAO, bloom, and AgX tone mapping. Medium keeps the HDRI, shadows, and a lighter bloom. Low caps DPR at 1 and drops the heavy passes so mid-range phones can stay near 30 fps. The app picks a default from device memory and whether you are on a phone; you can change it any time. It is remembered on this device.
 - **Use my location** is optional and never required for walking, interiors, or the demo slot.
 - **Reset local demo** clears the saved avatar, layout, name, and demo-credit balance on this device. Mute is kept.
 
@@ -46,13 +47,13 @@ Thresholds live in `src/lib/homov.ts`. A pasted address is a preview only; conne
 
 ## Homo Bingo
 
-A free 5×5 game in the Members' Lounge, also listed in Search and marked on the promenade. Columns are H-O-M-O-V. The center square is a free gold H. Other squares mix numbers, house symbols (gold H, crown, diamond, champagne), and world names (Golden Hour Lounge, The Tailor, The Café, homoGAP, Laurent, Jules Wren, Wes Holloway, Members' Lounge). Laurent or Jules call the next square every few seconds. Tap a called square to daub it.
+A free 5×5 game in the Members' Lounge, also listed in Search and marked on the promenade. Columns are H-O-M-O-V. The center square is a free gold H. Other squares mix numbers, house symbols (gold H, crown, diamond, champagne), and world names (Golden Hour Lounge, The Tailor, The Café, homoGAP, Laurent, Jules Wren, Wes Holloway, Members' Lounge). Laurent or Jules call the next square every few seconds. Tap a called square to daub it. After a BINGO, or any time, **New card** deals a fresh card without touching your real HOMOV.
 
 Each daub spends one **demo HOMOV dauber**, shown as a gold HOMOV coin stamp. You get 25 free demo daubers per card and can refill for free. These are a local counter only. They are never deducted from, and never linked to, a real on-chain HOMOV balance. There are no transactions and no approvals. If a wallet is connected and verified as a member, the coin stamp uses a cosmetic gold-coin skin and the free pack is slightly larger by rank (still demo only). **Demo daubers. Your real HOMOV is never spent.** A BINGO (row, column, or diagonal) throws pink-and-gold confetti and can grant a few demo credits. No real money, no prizes, no token transfers.
 
 ## Quality limits
 
-This is a stylized boutique evening, not photoreal architecture. Storefronts use original procedural brick, stone, stucco, marble, and wood canvases, plus modeled awnings, cornices, door frames, and lit glass. Interiors are stylized rooms (floors, trim, lighting, a few furnishings), not scanned spaces. The look is closer to a lit stage set than a photograph. See `ASSETS.md`.
+This is a stylized boutique evening, not photoreal architecture and not a GTA-like city. Storefronts use CC0 PBR maps from Poly Haven (see `ASSETS.md`) with gold trim, pilasters, cornices, awnings, and lit glass, plus distance LOD. Interiors are stylized rooms with tiled floors, not scanned spaces. A dusk HDRI (Joburg Central Sunset) lights the plaza on High and Medium, with fog, shadows, optional AO and bloom, and AgX or ACES tone mapping. Characters are still mannequins with better heads, collars, and Laurent's gold H pin — not photogrammetry. Fallback procedural canvases load if a texture fails. The look is closer to a lit stage set than a photograph.
 
 ## Safeguards
 

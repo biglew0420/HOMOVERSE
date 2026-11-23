@@ -31,7 +31,8 @@ const room: CSSProperties = {
   gap: 10,
 };
 
-function Floor({ color }: { color: string }) {
+function Floor({ color, tex }: { color: string; tex?: string }) {
+  const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? './';
   return (
     <div
       aria-hidden
@@ -41,7 +42,10 @@ function Floor({ color }: { color: string }) {
         right: '-10%',
         bottom: 0,
         height: '42%',
-        background: `linear-gradient(180deg, transparent, ${color})`,
+        background: tex
+          ? `linear-gradient(180deg, transparent, ${color}cc), url(${base}${tex})`
+          : `linear-gradient(180deg, transparent, ${color})`,
+        backgroundSize: tex ? 'auto, 180px 180px' : undefined,
         transform: 'perspective(400px) rotateX(55deg)',
         transformOrigin: 'bottom',
         boxShadow: `inset 0 0 80px ${theme.black}`,
@@ -127,7 +131,7 @@ export function Interior({
         <Action testid="exit-interior" onClick={onExit}>Exit</Action>
       </div>
       <div style={room}>
-        <Floor color={roomCopy.floor} />
+        <Floor color={roomCopy.floor} tex={shopId === 'members' ? 'tex/velvet_diff.webp' : 'tex/wood_diff.webp'} />
         <div aria-hidden style={{ position: 'absolute', inset: 16, border: `1px solid ${theme.gold}55`, borderRadius: 12, pointerEvents: 'none', boxShadow: `inset 0 0 60px ${theme.mauve}33` }} />
         {shopId === 'tailor' && <div aria-hidden style={{ position: 'absolute', right: 28, top: 28, width: 70, height: 120, border: `2px solid ${theme.gold}`, background: '#2a2420aa' }} />}
         {shopId === 'cafe' && <div aria-hidden style={{ position: 'absolute', left: 24, bottom: 90, width: 80, height: 36, borderRadius: 18, background: theme.coolRose, opacity: 0.45 }} />}
@@ -165,7 +169,7 @@ export function MembersBooth({ rank, onExit }: { rank: HomovRankId; onExit: () =
         <Action testid="exit-booth" onClick={onExit}>Back to the lounge</Action>
       </div>
       <div style={{ ...room, background: `linear-gradient(180deg, ${theme.velvet}, ${theme.black})` }}>
-        <Floor color={theme.velvet} />
+        <Floor color={theme.velvet} tex="tex/velvet_diff.webp" />
         <p style={{ position: 'relative' }}>A quieter corner of Golden Hour. Mauve velvet, a low gold lamp, no ledger.</p>
         <p style={{ position: 'relative' }}>{NPC_META.simon.name}: “{NPC_LINES.simon[4]}”</p>
         <p style={{ position: 'relative', color: theme.gold }}>Cosmetic rank: {rank}</p>

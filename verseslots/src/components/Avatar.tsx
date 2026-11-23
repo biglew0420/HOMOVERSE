@@ -4,6 +4,7 @@ import { Html } from '@react-three/drei';
 import type { Group } from 'three';
 import { hairColor, outfitColors, skinColor, type AvatarStyle } from '../lib/avatarStyle';
 import { lookInput } from '../lib/lookInput';
+import { Collar, GoldHPin, Head } from './CharacterBits';
 import { moveInput } from '../lib/moveInput';
 
 const STATUS = { active: '#3f3', idle: '#fc3', offline: '#777' } as const;
@@ -74,6 +75,7 @@ export function Avatar({
         <capsuleGeometry args={[0.16, 0.42, 8, 18]} />
         <meshStandardMaterial color={colors.jacket} roughness={rough} metalness={metal} />
       </mesh>
+      <Collar color={colors.jacket} y={1.34} />
       <mesh position={[0, 1.36, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.11, 0.018, 10, 20]} />
         <meshStandardMaterial color={colors.accent} metalness={0.85} roughness={0.28} />
@@ -102,10 +104,7 @@ export function Avatar({
         <sphereGeometry args={[0.045, 14, 12]} />
         <meshStandardMaterial color={skin} roughness={0.55} />
       </mesh>
-      <mesh position={[0, 1.6, 0]} castShadow>
-        <sphereGeometry args={[0.135, 28, 22]} />
-        <meshStandardMaterial color={skin} roughness={0.48} />
-      </mesh>
+      <Head skin={skin} y={1.6} />
       {!armor && style.hair !== 'none' && (
         <mesh position={[0, 1.69, style.hair === 'long' ? -0.02 : 0]} scale={[1, style.hair === 'long' ? 0.7 : 0.55, 1]} castShadow>
           <sphereGeometry args={[0.145, 24, 18]} />
@@ -159,12 +158,7 @@ export function Avatar({
           </mesh>
         </group>
       )}
-      {memberBadge && (
-        <mesh position={[0.18, 1.42, 0.16]} castShadow>
-          <boxGeometry args={[0.07, 0.09, 0.03]} />
-          <meshStandardMaterial color="#C9A45B" metalness={0.9} roughness={0.22} emissive="#C9A45B" emissiveIntensity={0.25} />
-        </mesh>
-      )}
+      {memberBadge && <GoldHPin position={[0.18, 1.42, 0.17]} />}
       <mesh position={[0, 1.82, 0]}>
         <sphereGeometry args={[0.035, 12, 10]} />
         <meshBasicMaterial color={tagColor ?? STATUS[status]} />

@@ -8,6 +8,7 @@ import { theme, cssVars } from '../lib/theme';
 import { HOMOV_CONFIG, type HomovRank } from '../lib/homov';
 import { demoAudio } from '../lib/audio';
 import type { HomovState } from '../hooks/useHomov';
+import { QUALITY_IDS, type QualityId, type QualitySettings } from '../lib/quality';
 
 export function useLandscape() {
   const [on, setOn] = useState(() => window.innerWidth > window.innerHeight);
@@ -71,6 +72,8 @@ type Props = {
     proveOwnership: () => Promise<void>;
     disconnect: () => void;
   };
+  quality: QualitySettings;
+  onQuality: (id: QualityId) => void;
 };
 
 export function Hud(props: Props) {
@@ -82,10 +85,12 @@ export function Hud(props: Props) {
   const [paste, setPaste] = useState('');
   const [frames, setFrames] = useState(0);
   const [step, setStep] = useState(0);
+  const [fps, setFps] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => {
       setFrames(frameStats.frames);
       setStep(frameStats.lastStep);
+      setFps(frameStats.fps);
     }, 200);
     return () => window.clearInterval(id);
   }, []);
@@ -154,6 +159,8 @@ export function Hud(props: Props) {
         data-testid="hud"
         data-frames={frames}
         data-step={step.toFixed(4)}
+        data-quality={props.quality.id}
+        data-fps={fps.toFixed(1)}
         data-layout-mode={props.areaMode}
         data-movement-locked={props.movementLocked ? 'yes' : 'no'}
       >
@@ -164,7 +171,7 @@ export function Hud(props: Props) {
         <div data-testid="disclaimer" style={{ color: theme.ivory }}>
           Demo credits are not HOMO tokens. No cash value, no prizes, no cashout. Not purchasable, transferable, or redeemable.
         </div>
-        <div style={{ opacity: 0.9 }}>{props.online} · {props.here} here · stylized, not photoreal</div>
+        <div style={{ opacity: 0.9 }}>{props.online} · {props.here} here · stylized, not photoreal · <span data-testid="fps">{fps ? `${Math.round(fps)} fps` : '… fps'}</span></div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6, pointerEvents: 'auto' }}>
           <select data-testid="layout-select" aria-label="Procedural district" style={field} value={props.layoutKey} onChange={(e) => props.onLayout(e.target.value as LayoutKey)}>
             {LAYOUTS.map((layout) => (
@@ -177,6 +184,11 @@ export function Hud(props: Props) {
           <button type="button" style={button} data-testid="locate" onClick={props.onLocate} disabled={props.geoStatus === 'pending' || props.geoStatus === 'unsupported'}>
             {props.geoStatus === 'pending' ? 'Checking location…' : 'Use my location'}
           </button>
+          <select data-testid="quality-select" aria-label="Quality" style={field} value={props.quality.id} onChange={(e) => props.onQuality(e.target.value as QualityId)}>
+            {QUALITY_IDS.map((id) => (
+              <option key={id} value={id}>{id[0].toUpperCase() + id.slice(1)}</option>
+            ))}
+          </select>
           <button type="button" style={button} data-testid="mute-toggle" aria-pressed={props.muted} onClick={props.onMute}>
             {props.muted ? 'Sound off' : 'Sound on'}
           </button>
@@ -334,7 +346,7 @@ function UserPanel({
         <input data-testid="paste-address" style={field} placeholder="Paste address or basename" value={paste} onChange={(e) => setPaste(e.target.value)} />
         <button type="submit" style={button} data-testid="paste-address-go">Look up (read-only)</button>
       </form>
-      {homov.source === 'wallet' && !homov.verified && (
+      {homov.address && !homov.verified && (
         <button type="button" style={button} data-testid="prove-wallet" onClick={() => void homov.proveOwnership()}>
           Prove wallet (free signature, no gas)
         </button>

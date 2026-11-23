@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
 import type { District } from '../lib/district';
 import { BENCH } from '../lib/district';
@@ -7,6 +7,9 @@ import { NPC_LINES, NPC_META, RANK_GREETINGS, type NpcId } from '../lib/npcLines
 import { theme } from '../lib/theme';
 import { demoAudio } from '../lib/audio';
 import type { HomovRankId } from '../lib/homov';
+import { Collar, GoldHPin, Head } from './CharacterBits';
+import { useFrame } from '@react-three/fiber';
+import type { Group } from 'three';
 
 function useCycle(id: NpcId, near: boolean) {
   const [index, setIndex] = useState(0);
@@ -54,6 +57,7 @@ function Figure({
   pants,
   sitting,
   pin,
+  apron,
 }: {
   position: [number, number, number];
   rotationY: number;
@@ -61,14 +65,21 @@ function Figure({
   pants: string;
   sitting?: boolean;
   pin?: boolean;
+  apron?: boolean;
 }) {
-  const y = sitting ? -0.15 : 0;
+  const group = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const breathe = Math.sin(clock.elapsedTime * 1.6) * 0.012;
+    group.current.position.y = position[1] + breathe;
+  });
   return (
-    <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh position={[0, sitting ? 0.7 : 1.12, 0]} castShadow>
-        <capsuleGeometry args={[0.16, sitting ? 0.3 : 0.42, 8, 14]} />
-        <meshStandardMaterial color={jacket} roughness={0.45} />
+    <group ref={group} position={position} rotation={[0, rotationY, 0]}>
+      <mesh position={[0, sitting ? 0.7 : 1.12, 0]} castShadow receiveShadow>
+        <capsuleGeometry args={[0.16, sitting ? 0.3 : 0.42, 8, 16]} />
+        <meshStandardMaterial color={jacket} roughness={0.42} />
       </mesh>
+      <Collar color={jacket} y={sitting ? 0.92 : 1.34} />
       <mesh position={[-0.09, sitting ? 0.45 : 0.46, sitting ? 0.22 : 0]} rotation={[sitting ? Math.PI / 2.4 : 0, 0, 0]} castShadow>
         <capsuleGeometry args={[0.07, 0.5, 8, 12]} />
         <meshStandardMaterial color={pants} roughness={0.7} />
@@ -77,17 +88,26 @@ function Figure({
         <capsuleGeometry args={[0.07, 0.5, 8, 12]} />
         <meshStandardMaterial color={pants} roughness={0.7} />
       </mesh>
-      <mesh position={[0, sitting ? 1.15 : 1.58, 0]} castShadow>
-        <sphereGeometry args={[0.16, 16, 12]} />
-        <meshStandardMaterial color="#c9a07a" roughness={0.6} />
-      </mesh>
-      {pin && (
-        <mesh position={[0.12, sitting ? 0.95 : 1.28, 0.16]} castShadow>
-          <boxGeometry args={[0.05, 0.06, 0.02]} />
-          <meshStandardMaterial color={theme.gold} metalness={0.9} roughness={0.2} />
+      {sitting && (
+        <>
+          <mesh position={[-0.2, 0.82, 0.12]} rotation={[0.6, 0, 0.4]} castShadow>
+            <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+            <meshStandardMaterial color={jacket} roughness={0.45} />
+          </mesh>
+          <mesh position={[0.2, 0.82, 0.12]} rotation={[0.6, 0, -0.4]} castShadow>
+            <capsuleGeometry args={[0.045, 0.32, 6, 10]} />
+            <meshStandardMaterial color={jacket} roughness={0.45} />
+          </mesh>
+        </>
+      )}
+      <Head skin="#c9a07a" y={sitting ? 1.18 : 1.58} />
+      {apron && (
+        <mesh position={[0, 0.95, 0.14]} castShadow>
+          <boxGeometry args={[0.32, 0.4, 0.04]} />
+          <meshStandardMaterial color={theme.ivory} roughness={0.7} />
         </mesh>
       )}
-      <group position={[0, y, 0]} />
+      {pin && <GoldHPin position={[0.12, sitting ? 0.95 : 1.28, 0.17]} />}
     </group>
   );
 }
@@ -137,7 +157,7 @@ export function NpcFigures({
         {nearL && <Bubble text={shownLaurent} name={NPC_META.laurent.name} />}
       </group>
       <group position={julesPos}>
-        <Figure position={[0, 0, 0]} rotationY={julesRot} jacket={theme.ivory} pants={theme.charcoal} />
+        <Figure position={[0, 0, 0]} rotationY={julesRot} jacket={theme.ivory} pants={theme.charcoal} apron />
         {nearJ && <Bubble text={julesLine} name={NPC_META.jules.name} />}
       </group>
       <group position={wesPos} rotation={[0, BENCH.rotY, 0]}>

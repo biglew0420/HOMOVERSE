@@ -111,18 +111,41 @@ export function buildCallPool(): BingoCall[] {
 
 export const CALL_POOL = buildCallPool();
 
-function takeForColumn(pool: BingoCall[], col: number, count: number, rand: () => number): BingoCall[] {
-  const column = BINGO_COLUMNS[col];
-  const available = shuffle(pool.filter((item) => item.column === column), rand);
-  return available.slice(0, count);
+/** Numbers stay in their traditional 15-wide column band. Flavor can land in any column, once per card.
+ *  The two "O" columns do not share a pool, so a callId is unique on the card.
+ */
+function picksForColumn(col: number, count: number, rand: () => number, used: Set<string>): BingoCall[] {
+  const start = col * 15 + 1;
+  const end = start + 15;
+  const numeric = shuffle(
+    CALL_POOL.filter((item) => item.kind === 'number' && Number(item.label) >= start && Number(item.label) < end && !used.has(item.callId)),
+    rand,
+  );
+  const flavor = shuffle(
+    CALL_POOL.filter((item) => item.kind !== 'number' && !used.has(item.callId)),
+    rand,
+  );
+  const mixed: BingoCall[] = [];
+  let n = 0;
+  let f = 0;
+  while (mixed.length < count && (n < numeric.length || f < flavor.length)) {
+    const preferFlavor = flavor.length - f > 0 && (mixed.length < 1 ? rand() < 0.35 : rand() < 0.22);
+    const next = preferFlavor && f < flavor.length ? flavor[f++] : numeric[n++] ?? flavor[f++];
+    if (!next || used.has(next.callId)) continue;
+    used.add(next.callId);
+    mixed.push(next);
+  }
+  return mixed;
 }
 
 export function generateCard(seed = Date.now()): BingoCell[] {
   const rand = mulberry32(seed >>> 0);
+  const used = new Set<string>(['free-center']);
   const cells: BingoCell[] = [];
   for (let col = 0; col < BINGO_SIZE; col++) {
-    const needed = BINGO_SIZE;
-    const picks = takeForColumn(CALL_POOL, col, needed, rand);
+    const needed = col === FREE_CENTER.col ? BINGO_SIZE - 1 : BINGO_SIZE;
+    const picks = picksForColumn(col, needed, rand, used);
+    let cursor = 0;
     for (let row = 0; row < BINGO_SIZE; row++) {
       if (row === FREE_CENTER.row && col === FREE_CENTER.col) {
         cells.push({
@@ -135,7 +158,8 @@ export function generateCard(seed = Date.now()): BingoCell[] {
         });
         continue;
       }
-      const pick = picks[row] ?? picks[0];
+      const pick = picks[cursor++];
+      if (!pick) throw new Error('Homo Bingo card pool exhausted');
       cells.push({
         id: `${row}:${col}`,
         row,
@@ -155,6 +179,12 @@ export function cellAt(card: BingoCell[], row: number, col: number): BingoCell |
 
 export function initialDaubed(card: BingoCell[]): Set<string> {
   return new Set(card.filter((cell) => cell.kind === 'free').map((cell) => cell.id));
+}
+
+/** Fresh card, clear daubs and calls. Dauber inventory is left alone (refill is separate and still free). */
+export function resetBingoRound(seed = Date.now()): { card: BingoCell[]; daubed: Set<string> } {
+  const card = generateCard(seed);
+  return { card, daubed: initialDaubed(card) };
 }
 
 export function findWinningLines(card: BingoCell[], daubed: Set<string> | ReadonlySet<string>): BingoLine[] {

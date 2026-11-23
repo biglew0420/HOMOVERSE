@@ -22,6 +22,7 @@ import {
 import { buildDistrict, districtSignature, nearestEnterable, storeById, SPAWN } from './lib/district';
 import { lookInput } from './lib/lookInput';
 import { demoAudio } from './lib/audio';
+import { QUALITY_STORAGE_KEY, browserHints, loadQualityId, qualitySettings, writeQualityId, type QualityId, type QualitySettings } from './lib/quality';
 import { theme } from './lib/theme';
 import { useHomov } from './hooks/useHomov';
 import { MULTIPLAYER, RoomProvider, useBroadcastEvent, useEventListener, useMyPresence, useOthers, useStatus, type Presence } from './liveblocks';
@@ -158,6 +159,11 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
   const [fading, setFading] = useState(false);
   const [displayName, setDisplayName] = useState(boot.displayName);
   const [muted, setMuted] = useState(demoAudio.muted);
+  const [qualityId, setQualityId] = useState<QualityId>(() => loadQualityId(
+    typeof localStorage === 'undefined' ? null : localStorage.getItem(QUALITY_STORAGE_KEY),
+    browserHints(),
+  ));
+  const quality: QualitySettings = qualitySettings(qualityId, browserHints());
   const [nav, setNav] = useState<NavGoal>(null);
   const epoch = useRef(0);
   const [epochTick, setEpochTick] = useState(0);
@@ -285,6 +291,7 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
         tagColor={tagColor}
         rank={rank}
         displayName={displayName}
+        quality={quality}
       />
       {!overlayOpen && <LookPad />}
       {!overlayOpen && <TouchJoystick disabled={false} size={landscape ? 92 : 112} />}
@@ -320,6 +327,11 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
         onWalkTo={(id) => goToStore(id, 'walk')}
         onJumpTo={(id) => goToStore(id, 'jump')}
         homov={homov}
+        quality={quality}
+        onQuality={(id) => {
+          setQualityId(id);
+          writeQualityId(typeof localStorage === 'undefined' ? null : localStorage, id);
+        }}
       />
       {openStore && !slotOpen && !boothOpen && !bingoOpen && (
         <Interior

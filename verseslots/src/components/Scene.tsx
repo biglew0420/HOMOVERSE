@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Vector3 } from 'three';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Environment, SoftShadows } from '@react-three/drei';
+import { ACESFilmicToneMapping, AgXToneMapping, PCFSoftShadowMap, Vector3 } from 'three';
+import { SceneEffects } from './SceneEffects';
+import { hdriUrl } from '../lib/pbr';
+import { type QualitySettings } from '../lib/quality';
 import { Avatar } from './Avatar';
 import { DistrictView } from './DistrictView';
 import type { AvatarStyle } from '../lib/avatarStyle';
@@ -15,7 +19,7 @@ import {
   wishVector,
   type District,
 } from '../lib/district';
-import { frameStats } from '../lib/frameStats';
+import { frameStats, tickFrameStats } from '../lib/frameStats';
 import { lookInput } from '../lib/lookInput';
 import { moveInput } from '../lib/moveInput';
 import type { Presence } from '../liveblocks';
@@ -42,6 +46,7 @@ type Props = {
   tagColor?: string;
   rank: HomovRankId;
   displayName: string;
+  quality: QualitySettings;
 };
 
 function useKeys() {
@@ -88,8 +93,7 @@ function Mover({ setMe, sim, district, locked, nav, onArrived }: {
 
   useFrame((_, dt) => {
     const stepDt = frameStep(dt);
-    frameStats.frames += 1;
-    frameStats.maxDt = Math.max(frameStats.maxDt, dt);
+    tickFrameStats(dt);
     frameStats.lastStep = stepDt;
     if (keys.current.q) lookInput.yaw += 1.5 * stepDt;
     if (keys.current.e) lookInput.yaw -= 1.5 * stepDt;
@@ -186,7 +190,50 @@ function remoteStyle(color: string) {
   return sanitizeAvatar({ skin: n % 5, hair: 'short', hairColor: n % 5, outfit: 'night' });
 }
 
-export function Scene({ me, setMe, others, district, avatar, locked, hotId, nav, onArrived, memberBadge, tagColor, rank, displayName }: Props) {
+
+function Lighting({ quality }: { quality: QualitySettings }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.toneMapping = quality.toneMapping === 'agx' ? AgXToneMapping : ACESFilmicToneMapping;
+    gl.toneMappingExposure = quality.exposure;
+    gl.shadowMap.enabled = quality.shadows;
+    gl.shadowMap.type = PCFSoftShadowMap;
+  }, [gl, quality]);
+  return (
+    <>
+      <color attach="background" args={[theme.plum]} />
+      <fog attach="fog" args={['#3d2830', quality.env ? 20 : 14, quality.env ? 58 : 40]} />
+      <hemisphereLight args={['#f3d3b0', theme.plum, quality.env ? 0.32 : 0.7]} />
+      <ambientLight intensity={quality.env ? 0.1 : 0.28} />
+      <mesh position={[0, 0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[18, 26, 40]} />
+        <meshBasicMaterial color={theme.gold} transparent opacity={0.12} />
+      </mesh>
+      <directionalLight
+        position={[-16, 11, 8]}
+        intensity={quality.env ? 0.8 : 1.3}
+        color="#ffc396"
+        castShadow={quality.shadows}
+        shadow-mapSize-width={quality.shadowMap || 1024}
+        shadow-mapSize-height={quality.shadowMap || 1024}
+        shadow-camera-near={2}
+        shadow-camera-far={48}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={22}
+        shadow-camera-bottom={-22}
+        shadow-bias={-0.0006}
+      />
+      {quality.env && (
+        <Environment files={hdriUrl()} background backgroundBlurriness={0.16} environmentIntensity={0.62} />
+      )}
+      {quality.softShadows && <SoftShadows size={14} samples={8} focus={0.45} />}
+      <SceneEffects quality={quality} />
+    </>
+  );
+}
+
+export function Scene({ me, setMe, others, district, avatar, locked, hotId, nav, onArrived, memberBadge, tagColor, rank, displayName, quality }: Props) {
   const sim = useRef<Sim>({ x: me.x, z: me.z });
   useEffect(() => {
     lookInput.yaw = 0;
@@ -201,36 +248,14 @@ export function Scene({ me, setMe, others, district, avatar, locked, hotId, nav,
   }, [locked, me.x, me.z]);
   return (
     <Canvas
-      shadows
-      dpr={[1, 1.5]}
+      shadows={quality.shadows}
+      dpr={quality.dpr}
       camera={{ position: [0, 2.05, SPAWN.z + 4.8], fov: 50, near: 0.08, far: 80 }}
       style={{ touchAction: 'none', width: '100%', height: '100%' }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      gl={{ antialias: quality.antialias, powerPreference: 'high-performance', toneMappingExposure: quality.exposure }}
     >
-      <color attach="background" args={[theme.plum]} />
-      <fog attach="fog" args={[theme.dusk, 16, 48]} />
-      <hemisphereLight args={['#f7ead0', theme.plum, 0.72]} />
-      <ambientLight intensity={0.28} />
-      <mesh position={[0, 0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[18, 26, 40]} />
-        <meshBasicMaterial color={theme.gold} transparent opacity={0.18} />
-      </mesh>
-      <directionalLight
-        position={[14, 18, 8]}
-        intensity={1.35}
-        color="#ffe2b8"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-near={2}
-        shadow-camera-far={48}
-        shadow-camera-left={-22}
-        shadow-camera-right={22}
-        shadow-camera-top={22}
-        shadow-camera-bottom={-22}
-        shadow-bias={-0.0006}
-      />
-      <DistrictView district={district} hotId={hotId} player={{ x: me.x, z: me.z }} rank={rank} />
+      <Lighting quality={quality} />
+      <DistrictView district={district} hotId={hotId} player={{ x: me.x, z: me.z }} rank={rank} quality={quality} />
       <Mover setMe={setMe} sim={sim} district={district} locked={locked} nav={nav} onArrived={onArrived} />
       <FollowCam sim={sim} />
       <IdleThought sim={sim} locked={locked} />

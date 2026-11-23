@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   HOMOV_CONFIG,
+  sameAddress,
   encodeBalanceOf,
   isHexAddress,
   isMember,
@@ -75,7 +76,17 @@ describe('address helpers', () => {
   });
 });
 
+describe('wallet match', () => {
+  it('sameAddress is case-insensitive and rejects a different account', () => {
+    const a = '0x1C9819c04C6d8Af322aAd71F56ABF51690173136';
+    expect(sameAddress(a, a.toLowerCase())).toBe(true);
+    expect(sameAddress(a, '0x0000000000000000000000000000000000000001')).toBe(false);
+    expect(sameAddress('not-an-address', a)).toBe(false);
+  });
+});
+
 describe('mocked RPC reads', () => {
+
   const wallet = '0x1111111111111111111111111111111111111111';
   const oneToken = `0x${(10n ** 18n).toString(16).padStart(64, '0')}`;
 
