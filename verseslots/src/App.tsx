@@ -4,6 +4,7 @@ import { TouchJoystick } from './components/TouchJoystick';
 import { LookPad } from './components/LookPad';
 import { Hud, useLandscape } from './components/Hud';
 import { Interior, MembersBooth, FadeVeil } from './components/Interior';
+import { Bingo } from './components/Bingo';
 import { BUILDINGS } from './lib/buildings';
 import { GOLDEN_HOUR_ID } from './lib/shops';
 import { acceptWinEvent, MAX_PLAY_PAYOUT, type SafeWin } from './lib/winEvent';
@@ -153,6 +154,7 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
   const [openId, setOpenId] = useState<string | null>(null);
   const [slotOpen, setSlotOpen] = useState(false);
   const [boothOpen, setBoothOpen] = useState(false);
+  const [bingoOpen, setBingoOpen] = useState(false);
   const [fading, setFading] = useState(false);
   const [displayName, setDisplayName] = useState(boot.displayName);
   const [muted, setMuted] = useState(demoAudio.muted);
@@ -200,6 +202,7 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
     setOpenId(null);
     setSlotOpen(false);
     setBoothOpen(false);
+    setBingoOpen(false);
   }, [district.seed]);
 
   const fadeTo = (work: () => void) => {
@@ -246,6 +249,7 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
     setOpenId(null);
     setSlotOpen(false);
     setBoothOpen(false);
+    setBingoOpen(false);
     setDisplayName(fresh.displayName);
     setMe({ x: SPAWN.x, z: SPAWN.z, status: 'active', name: randomMe().name });
   };
@@ -257,10 +261,11 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
     setOpenId(null);
     setSlotOpen(false);
     setBoothOpen(false);
+    setBingoOpen(false);
   };
 
   const here = others.filter((o) => o.status !== 'offline').length + 1;
-  const overlayOpen = openStore != null || slotOpen || boothOpen || fading;
+  const overlayOpen = openStore != null || slotOpen || boothOpen || bingoOpen || fading;
 
   const tagColor = !memberUnlocked ? undefined : rank === 'velvet' ? theme.mauve : rank === 'gold' ? theme.goldBright : theme.gold;
 
@@ -316,7 +321,7 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
         onJumpTo={(id) => goToStore(id, 'jump')}
         homov={homov}
       />
-      {openStore && !slotOpen && !boothOpen && (
+      {openStore && !slotOpen && !boothOpen && !bingoOpen && (
         <Interior
           shopId={openStore.id}
           shopName={openStore.name}
@@ -332,9 +337,20 @@ function Game({ me, setMe, others, broadcast, wins, pushWin, online }: {
           })}
           onPlay={() => setSlotOpen(true)}
           onBooth={() => { if (memberUnlocked) setBoothOpen(true); }}
+          onPlayBingo={() => setBingoOpen(true)}
         />
       )}
       {boothOpen && <MembersBooth rank={rank} onExit={() => setBoothOpen(false)} />}
+      {bingoOpen && (
+        <Bingo
+          rank={rank}
+          verified={memberUnlocked}
+          onClose={() => setBingoOpen(false)}
+          onReward={(amount) => {
+            if (Number.isInteger(amount) && amount > 0) setCredits((c) => c + amount);
+          }}
+        />
+      )}
       <FadeVeil on={fading} />
     </>
   );

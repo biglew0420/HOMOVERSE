@@ -60,7 +60,7 @@ export const SHOPS: ShopDef[] = [
     material: 'stone',
     signColor: theme.goldTrim,
     awningColor: theme.mauve,
-    searchHint: 'A quieter room, a kept seat',
+    searchHint: 'Homo Bingo · a quieter room, a kept seat',
   },
   {
     id: 'homogap',

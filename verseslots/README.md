@@ -25,7 +25,7 @@ Open the URL Vite prints (usually `http://localhost:5173`). Optional Liveblocks 
 - Walk with the bottom-left stick. Drag to look. Q/E or WASD / arrows work on desktop.
 - **Search** finds every store (enterable ones are marked). Walk there, or Jump to the door.
 - Stand at a door and tap **Enter**. A short fade takes you inside. **Exit** returns you to the door.
-- Enterable shops: Golden Hour Lounge (demo slot inside), The Tailor, The Café, Members' Lounge, and homoGAP (link to the real merch shop, new tab). Other façades are window-shopping only.
+- Enterable shops: Golden Hour Lounge (demo slot inside), The Tailor, The Café, Members' Lounge (home of **Homo Bingo**), and homoGAP (link to the real merch shop, new tab). Other façades are window-shopping only.
 - Laurent greets at the Golden Hour door, Jules Wren keeps the Tailor, Wes Holloway sits the plaza bench. Thought bubbles are light and not about money.
 - **User** holds your local name, avatar shortcut, demo balance, mute, and the read-only HOMOV tools (Connect wallet, or paste an address / basename). Accounts coming soon.
 - **Use my location** is optional and never required for walking, interiors, or the demo slot.
@@ -43,6 +43,12 @@ Read from the on-chain HOMOV balance, never spent:
 | Velvet | ≥ 10,000 | Mauve name-tag color. |
 
 Thresholds live in `src/lib/homov.ts`. A pasted address is a preview only; connect an injected wallet (or optionally sign a free `personal_sign`) to wear the badge and enter the booth. The gate is checked in the browser. A later production build would need a server or indexer to verify the same `balanceOf` result before granting a session.
+
+## Homo Bingo
+
+A free 5×5 game in the Members' Lounge, also listed in Search and marked on the promenade. Columns are H-O-M-O-V. The center square is a free gold H. Other squares mix numbers, house symbols (gold H, crown, diamond, champagne), and world names (Golden Hour Lounge, The Tailor, The Café, homoGAP, Laurent, Jules Wren, Wes Holloway, Members' Lounge). Laurent or Jules call the next square every few seconds. Tap a called square to daub it.
+
+Each daub spends one **demo HOMOV dauber**, shown as a gold HOMOV coin stamp. You get 25 free demo daubers per card and can refill for free. These are a local counter only. They are never deducted from, and never linked to, a real on-chain HOMOV balance. There are no transactions and no approvals. If a wallet is connected and verified as a member, the coin stamp uses a cosmetic gold-coin skin and the free pack is slightly larger by rank (still demo only). **Demo daubers. Your real HOMOV is never spent.** A BINGO (row, column, or diagonal) throws pink-and-gold confetti and can grant a few demo credits. No real money, no prizes, no token transfers.
 
 ## Quality limits
 

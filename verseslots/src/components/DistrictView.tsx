@@ -317,6 +317,31 @@ export function DistrictView({
       {district.storefronts.map((store) => (
         <StorefrontMesh key={store.id} store={store} hot={store.id === hotId} mats={mats} />
       ))}
+      {district.storefronts.filter((store) => store.id === 'members').map((store) => {
+        const dx = store.interactX - store.x;
+        const dz = store.interactZ - store.z;
+        const len = Math.hypot(dx, dz) || 1;
+        const x = store.interactX + (dx / len) * 0.9;
+        const z = store.interactZ + (dz / len) * 0.9;
+        return (
+          <group key="homo-bingo-sign" position={[x, 0, z]} rotation={[0, store.rotY, 0]}>
+            <mesh position={[0, 0.85, 0]} castShadow>
+              <boxGeometry args={[0.06, 1.7, 0.06]} />
+              <meshStandardMaterial color={theme.ink} metalness={0.4} roughness={0.4} />
+            </mesh>
+            <mesh position={[0, 1.72, 0.04]} castShadow>
+              <boxGeometry args={[1.7, 0.55, 0.06]} />
+              <meshStandardMaterial color={theme.black} />
+            </mesh>
+            <Text position={[0, 1.8, 0.08]} fontSize={0.16} color={theme.gold} anchorX="center">
+              HOMO BINGO
+            </Text>
+            <Text position={[0, 1.58, 0.08]} fontSize={0.1} color={theme.blush} anchorX="center">
+              Members' Lounge this way
+            </Text>
+          </group>
+        );
+      })}
       <Dust />
       <SkyParallax />
       <NpcFigures district={district} player={player} rank={rank} />

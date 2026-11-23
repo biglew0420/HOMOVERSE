@@ -81,6 +81,7 @@ export function Interior({
   onExit,
   onPlay,
   onBooth,
+  onPlayBingo,
 }: {
   shopId: string;
   shopName: string;
@@ -89,6 +90,7 @@ export function Interior({
   onExit: () => void;
   onPlay: () => void;
   onBooth: () => void;
+  onPlayBingo: () => void;
 }) {
   const copy: Record<string, { mood: string; detail: string; floor: string }> = {
     golden: {
@@ -107,8 +109,8 @@ export function Interior({
       floor: '#201816',
     },
     members: {
-      mood: 'Leather chairs, low gold lamps, mauve velvet, a small bar.',
-      detail: NPC_LINES.simon[3],
+      mood: 'Leather chairs, low gold lamps, mauve velvet, and a table for Homo Bingo.',
+      detail: 'Free play with demo HOMOV daubers. Your real HOMOV is never spent.',
       floor: '#1a1016',
     },
     homogap: {
@@ -143,6 +145,7 @@ export function Interior({
               Members' Booth · HOMO Member badge required (read-only balance check)
             </span>
           )}
+          {shopId === 'members' && <Action testid="play-homo-bingo" onClick={onPlayBingo}>Play Homo Bingo</Action>}
           {shopId === 'homogap' && <Action testid="homogap-shop-link" href={HOMOGAP_SHOP_URL}>Shop homoGAP (opens in a new tab)</Action>}
         </div>
         {member && shopId === 'golden' && (
