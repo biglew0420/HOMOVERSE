@@ -6,8 +6,11 @@ import type { District } from '../lib/district';
 import { BENCH, FOUNTAIN_RADIUS, hashString } from '../lib/district';
 import { disposePlazaMaterials, ensureUv2, loadPlazaMaterials, proceduralPlazaMaterials, type PlazaMaterials } from '../lib/pbr';
 import { theme } from '../lib/theme';
+import { makeMonogramH } from '../lib/smoothGeo';
 import { NpcFigures } from './Npc';
 import { StorefrontMesh } from './Storefront';
+import { StreetDressing } from './StreetDressing';
+import { SmoothBox } from './SmoothBox';
 import type { HomovRankId } from '../lib/homov';
 import type { QualitySettings } from '../lib/quality';
 
@@ -50,6 +53,7 @@ function Fountain({ mats, quality }: { mats: PlazaMaterials; quality: QualitySet
     }
   });
   const segs = quality.circleSegments;
+  const monogram = useMemo(() => makeMonogramH(1.2, 1.35, 0.12), []);
   return (
     <group>
       <mesh position={[0, 0.16, 0]} material={mats.marble} castShadow receiveShadow>
@@ -65,18 +69,8 @@ function Fountain({ mats, quality }: { mats: PlazaMaterials; quality: QualitySet
       <mesh position={[0, 0.78, 0]} material={mats.marble} castShadow receiveShadow>
         <cylinderGeometry args={[0.42, 0.5, 0.28, 24]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
-      {/* Gold H monogram, stacked from bars */}
-      <mesh position={[-0.07, 1.15, 0]} castShadow>
-        <boxGeometry args={[0.16, 1.05, 0.08]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.88} roughness={0.22} />
-      </mesh>
-      <mesh position={[0.15, 1.15, 0]} castShadow>
-        <boxGeometry args={[0.16, 1.05, 0.08]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.88} roughness={0.22} />
-      </mesh>
-      <mesh position={[0.04, 1.15, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <boxGeometry args={[0.16, 0.38, 0.08]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.88} roughness={0.22} />
+      <mesh geometry={monogram} position={[0, 2.02, 0]} castShadow>
+        <meshStandardMaterial color={theme.gold} emissive={theme.gold} emissiveIntensity={0.22} metalness={0.88} roughness={0.2} envMapIntensity={1.2} />
       </mesh>
       <group ref={water}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -92,7 +86,7 @@ function Fountain({ mats, quality }: { mats: PlazaMaterials; quality: QualitySet
       </group>
       <pointLight ref={light} position={[0, 1.45, 0]} color={theme.gold} intensity={1.2} distance={8} />
       <pointLight position={[0, 1.15, 0]} color={theme.coolRose} intensity={0.4} distance={6} />
-      <Text position={[0, 1.78, 0]} fontSize={0.15} color={theme.gold} anchorX="center">
+      <Text position={[0, 1.95, 0]} fontSize={0.12} color={theme.gold} anchorX="center">
         H
       </Text>
     </group>
@@ -226,14 +220,16 @@ export function DistrictView({
   quality: QualitySettings;
 }) {
   const mats = usePlazaMaterials(hashSeed(district.seed), quality.anisotropy);
+  const fillet = quality.id === 'high' ? 3 : quality.id === 'medium' ? 2 : 1;
   return (
     <group>
       <mesh rotation-x={-Math.PI / 2} material={mats.park} receiveShadow>
         <circleGeometry args={[22, quality.circleSegments]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
       <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2} material={mats.paving} receiveShadow>
-        <circleGeometry args={[9.2, quality.circleSegments]} onUpdate={(g) => ensureUv2(g)} />
+        <circleGeometry args={[8.05, quality.circleSegments]} onUpdate={(g) => ensureUv2(g)} />
       </mesh>
+      <StreetDressing mats={mats} quality={quality} />
       <mesh position={[0, 0.03, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[7.6, 8.9, quality.circleSegments]} />
         <meshStandardMaterial color={theme.gold} transparent opacity={0.12} />
@@ -242,34 +238,36 @@ export function DistrictView({
       <Lamps spots={district.lamps} quality={quality} player={player} />
       {district.trees.map((tree) => (
         <group key={`${tree.x}:${tree.z}`} position={[tree.x, 0, tree.z]} scale={tree.scale}>
-          <mesh position={[0, 0.85, 0]} material={mats.wood} castShadow>
-            <cylinderGeometry args={[0.09, 0.14, 1.5, quality.treeSegments]} onUpdate={(g) => ensureUv2(g)} />
+          <mesh position={[0, 0.75, 0]} material={mats.wood} castShadow>
+            <cylinderGeometry args={[0.07, 0.16, 1.5, quality.treeSegments]} onUpdate={(g) => ensureUv2(g)} />
           </mesh>
-          <mesh position={[0, 1.85, 0]} castShadow>
-            <sphereGeometry args={[0.72, quality.treeSegments, Math.max(8, quality.treeSegments - 2)]} />
-            <meshStandardMaterial color="#234232" roughness={0.82} />
+          <mesh position={[0.18, 1.25, 0.04]} rotation={[0.2, 0, -0.7]} material={mats.wood} castShadow>
+            <cylinderGeometry args={[0.025, 0.04, 0.55, Math.max(6, quality.treeSegments - 4)]} />
           </mesh>
-          <mesh position={[0.28, 1.7, 0.1]} castShadow>
-            <sphereGeometry args={[0.4, quality.treeSegments, 8]} />
-            <meshStandardMaterial color="#2b5540" roughness={0.82} />
-          </mesh>
+          {[
+            [0, 2.05, 0, 0.78, '#1e3b2c'],
+            [0.55, 1.55, 0.2, 0.5, '#2a5340'],
+            [-0.5, 1.62, -0.18, 0.48, '#244636'],
+            [0.1, 2.45, -0.2, 0.4, '#326048'],
+          ].slice(0, quality.id === 'low' ? 2 : 4).map(([x, y, z, r, color]) => (
+            <mesh key={`${x}:${y}`} position={[Number(x), Number(y), Number(z)]} castShadow>
+              <sphereGeometry args={[Number(r), quality.treeSegments, Math.max(8, quality.treeSegments - 2)]} />
+              <meshStandardMaterial color={String(color)} roughness={0.86} />
+            </mesh>
+          ))}
         </group>
       ))}
       <group position={[BENCH.x, 0, BENCH.z]} rotation={[0, BENCH.rotY, 0]}>
-        <mesh position={[0, 0.42, 0]} material={mats.wood} castShadow receiveShadow>
-          <boxGeometry args={[1.6, 0.08, 0.48]} onUpdate={(g) => ensureUv2(g)} />
+        <SmoothBox size={[1.55, 0.1, 0.48]} radius={0.04} segments={fillet} position={[0, 0.42, 0.02]} material={mats.wood} castShadow receiveShadow />
+        <mesh position={[0, 0.86, -0.18]} rotation={[0, Math.PI, Math.PI / 2]} material={mats.wood} castShadow>
+          <cylinderGeometry args={[0.38, 0.38, 1.48, 16, 1, true, 0, Math.PI / 2]} />
         </mesh>
-        <mesh position={[0, 0.7, -0.2]} material={mats.wood} castShadow>
-          <boxGeometry args={[1.6, 0.4, 0.08]} onUpdate={(g) => ensureUv2(g)} />
-        </mesh>
-        <mesh position={[-0.7, 0.22, 0]} castShadow>
-          <boxGeometry args={[0.08, 0.44, 0.48]} />
-          <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
-        </mesh>
-        <mesh position={[0.7, 0.22, 0]} castShadow>
-          <boxGeometry args={[0.08, 0.44, 0.48]} />
-          <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
-        </mesh>
+        {[-0.64, 0.64].map((x) => (
+          <mesh key={x} position={[x, 0.22, 0]} castShadow>
+            <cylinderGeometry args={[0.035, 0.045, 0.44, 8]} />
+            <meshStandardMaterial color={theme.gold} metalness={0.75} roughness={0.28} />
+          </mesh>
+        ))}
       </group>
       {district.storefronts.map((store) => (
         <StorefrontMesh key={store.id} store={store} hot={store.id === hotId} mats={mats} quality={quality} player={player} />
@@ -283,13 +281,10 @@ export function DistrictView({
         return (
           <group key="homo-bingo-sign" position={[x, 0, z]} rotation={[0, store.rotY, 0]}>
             <mesh position={[0, 0.85, 0]} castShadow>
-              <boxGeometry args={[0.06, 1.7, 0.06]} />
+              <cylinderGeometry args={[0.035, 0.045, 1.7, 8]} />
               <meshStandardMaterial color={theme.ink} metalness={0.4} roughness={0.4} />
             </mesh>
-            <mesh position={[0, 1.72, 0.04]} castShadow>
-              <boxGeometry args={[1.7, 0.55, 0.06]} />
-              <meshStandardMaterial color={theme.black} />
-            </mesh>
+            <SmoothBox size={[1.65, 0.52, 0.06]} radius={0.08} segments={fillet} position={[0, 1.72, 0.04]} castShadow color={theme.black} metalness={0.2} roughness={0.5} />
             <Text position={[0, 1.8, 0.08]} fontSize={0.16} color={theme.gold} anchorX="center">
               HOMO BINGO
             </Text>

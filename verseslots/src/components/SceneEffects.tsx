@@ -1,12 +1,14 @@
-import { EffectComposer, Bloom, N8AO } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, N8AO, SMAA, Vignette } from '@react-three/postprocessing';
 import type { QualitySettings } from '../lib/quality';
 
 export function SceneEffects({ quality }: { quality: QualitySettings }) {
-  if (!quality.ao && !quality.bloom) return null;
+  if (!quality.ao && !quality.bloom && !quality.vignette && !quality.smaa) return null;
   return (
     <EffectComposer enableNormalPass={quality.ao} multisampling={0}>
-      {quality.ao ? <N8AO aoRadius={0.85} intensity={1.45} distanceFalloff={1.1} /> : <></>}
-      {quality.bloom ? <Bloom luminanceThreshold={0.88} intensity={0.4} mipmapBlur radius={0.45} /> : <></>}
+      {quality.smaa ? <SMAA /> : <></>}
+      {quality.ao ? <N8AO aoRadius={0.55} intensity={1.25} distanceFalloff={1} /> : <></>}
+      {quality.bloom ? <Bloom luminanceThreshold={0.78} intensity={0.42} mipmapBlur radius={0.42} /> : <></>}
+      {quality.vignette ? <Vignette eskil={false} offset={0.18} darkness={0.46} /> : <></>}
     </EffectComposer>
   );
 }

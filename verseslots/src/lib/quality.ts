@@ -20,6 +20,8 @@ export type QualitySettings = {
   dust: boolean;
   lodNear: number;
   lodFar: number;
+  vignette: boolean;
+  smaa: boolean;
   toneMapping: 'agx' | 'aces';
   exposure: number;
   antialias: boolean;
@@ -64,23 +66,23 @@ export function qualitySettings(id: QualityId, hints: QualityHints = {}): Qualit
     return {
       id, label: 'High', dpr, shadows: true, shadowMap: 2048, softShadows: true,
       ao: true, bloom: true, env: true, anisotropy: 8, lampLights: 4, dust: true,
-      lodNear: 10, lodFar: 18, toneMapping: 'agx', exposure: 0.92, antialias: true,
-      treeSegments: 16, circleSegments: 64,
+      lodNear: 10, lodFar: 18, toneMapping: 'agx', exposure: 0.98, antialias: true,
+      treeSegments: 16, circleSegments: 64, vignette: true, smaa: !mobile,
     };
   }
   if (id === 'medium') {
     return {
       id, label: 'Medium', dpr, shadows: true, shadowMap: 1024, softShadows: false,
       ao: false, bloom: true, env: true, anisotropy: 4, lampLights: 2, dust: true,
-      lodNear: 7, lodFar: 14, toneMapping: 'aces', exposure: 0.95, antialias: true,
-      treeSegments: 12, circleSegments: 48,
+      lodNear: 7, lodFar: 14, toneMapping: 'aces', exposure: 1, antialias: true,
+      treeSegments: 12, circleSegments: 48, vignette: true, smaa: false,
     };
   }
   return {
     id, label: 'Low', dpr, shadows: false, shadowMap: 0, softShadows: false,
     ao: false, bloom: false, env: false, anisotropy: 1, lampLights: 0, dust: false,
     lodNear: 5, lodFar: 10, toneMapping: 'aces', exposure: 1, antialias: false,
-    treeSegments: 8, circleSegments: 32,
+    treeSegments: 8, circleSegments: 32, vignette: false, smaa: false,
   };
 }
 

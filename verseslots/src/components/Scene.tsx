@@ -80,6 +80,7 @@ function Mover({ setMe, sim, district, locked, nav, onArrived }: {
 }) {
   const keys = useKeys();
   const last = useRef(0);
+  const vel = useRef({ x: 0, z: 0 });
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
 
@@ -99,6 +100,8 @@ function Mover({ setMe, sim, district, locked, nav, onArrived }: {
     if (keys.current.e) lookInput.yaw -= 1.5 * stepDt;
 
     if (!lockedRef.current && nav) {
+      vel.current.x = 0;
+      vel.current.z = 0;
       if (nav.mode === 'jump') {
         const landed = tryMove(nav.x, nav.z, 0, 0, district.fountain);
         sim.current.x = landed.x;
@@ -140,8 +143,19 @@ function Mover({ setMe, sim, district, locked, nav, onArrived }: {
         if (len > 1) { ax /= len; az /= len; }
       }
     }
+    if (lockedRef.current) {
+      vel.current.x = 0;
+      vel.current.z = 0;
+    }
     const wish = wishVector(ax, az, lookInput.yaw);
-    const next = tryMove(sim.current.x, sim.current.z, wish.dx * WALK_SPEED * stepDt, wish.dz * WALK_SPEED * stepDt, district.fountain);
+    const ease = 1 - Math.exp(-12 * stepDt);
+    vel.current.x += (wish.dx * WALK_SPEED - vel.current.x) * ease;
+    vel.current.z += (wish.dz * WALK_SPEED - vel.current.z) * ease;
+    if (ax === 0 && az === 0 && Math.hypot(vel.current.x, vel.current.z) < 0.05) {
+      vel.current.x = 0;
+      vel.current.z = 0;
+    }
+    const next = tryMove(sim.current.x, sim.current.z, vel.current.x * stepDt, vel.current.z * stepDt, district.fountain);
     const moving = next.x !== sim.current.x || next.z !== sim.current.z;
     sim.current.x = next.x;
     sim.current.z = next.z;
@@ -157,14 +171,25 @@ function Mover({ setMe, sim, district, locked, nav, onArrived }: {
 function FollowCam({ sim }: { sim: React.MutableRefObject<Sim> }) {
   const desired = useRef(new Vector3());
   const lookAt = useRef(new Vector3());
+  const smoothLook = useRef(new Vector3());
+  const aimed = useRef(false);
   useFrame((state, dt) => {
     const { x, z } = sim.current;
     const yaw = lookInput.yaw;
-    desired.current.set(x + Math.sin(yaw) * 4.8, 2.05, z + Math.cos(yaw) * 4.8);
-    const blend = 1 - Math.exp(-4.2 * frameStep(dt || 0.016));
-    state.camera.position.lerp(desired.current, blend);
-    lookAt.current.set(x, 1.25, z);
-    state.camera.lookAt(lookAt.current);
+    const step = frameStep(dt || 0.016);
+    const dist = 6.15;
+    desired.current.set(x + Math.sin(yaw) * dist, 3.05, z + Math.cos(yaw) * dist);
+    const blend = 1 - Math.exp(-6.2 * step);
+    if (!aimed.current) {
+      state.camera.position.copy(desired.current);
+      aimed.current = true;
+    } else {
+      state.camera.position.lerp(desired.current, blend);
+    }
+    lookAt.current.set(x - Math.sin(yaw) * 1.15, 1.2, z - Math.cos(yaw) * 1.15);
+    if (smoothLook.current.lengthSq() === 0) smoothLook.current.copy(lookAt.current);
+    smoothLook.current.lerp(lookAt.current, aimed.current ? blend : 1);
+    state.camera.lookAt(smoothLook.current);
   });
   return null;
 }
@@ -202,9 +227,9 @@ function Lighting({ quality }: { quality: QualitySettings }) {
   return (
     <>
       <color attach="background" args={[theme.plum]} />
-      <fog attach="fog" args={['#3d2830', quality.env ? 20 : 14, quality.env ? 58 : 40]} />
-      <hemisphereLight args={['#f3d3b0', theme.plum, quality.env ? 0.32 : 0.7]} />
-      <ambientLight intensity={quality.env ? 0.1 : 0.28} />
+      <fog attach="fog" args={['#3a2834', quality.env ? 16 : 12, quality.env ? 52 : 36]} />
+      <hemisphereLight args={['#f3d3b0', theme.plum, quality.env ? 0.28 : 0.62]} />
+      <ambientLight intensity={quality.env ? 0.12 : 0.26} />
       <mesh position={[0, 0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[18, 26, 40]} />
         <meshBasicMaterial color={theme.gold} transparent opacity={0.12} />
@@ -224,6 +249,7 @@ function Lighting({ quality }: { quality: QualitySettings }) {
         shadow-camera-bottom={-22}
         shadow-bias={-0.0006}
       />
+      <directionalLight position={[8, 7, 14]} intensity={quality.env ? 0.34 : 0.2} color="#f0d0be" />
       {quality.env && (
         <Environment files={hdriUrl()} background backgroundBlurriness={0.16} environmentIntensity={0.62} />
       )}
@@ -250,7 +276,7 @@ export function Scene({ me, setMe, others, district, avatar, locked, hotId, nav,
     <Canvas
       shadows={quality.shadows}
       dpr={quality.dpr}
-      camera={{ position: [0, 2.05, SPAWN.z + 4.8], fov: 50, near: 0.08, far: 80 }}
+      camera={{ position: [0, 3.05, SPAWN.z + 6.15], fov: 50, near: 0.08, far: 90 }}
       style={{ touchAction: 'none', width: '100%', height: '100%' }}
       gl={{ antialias: quality.antialias, powerPreference: 'high-performance', toneMappingExposure: quality.exposure }}
     >

@@ -238,7 +238,7 @@ export function Hud(props: Props) {
       {avatarOpen && (
         <div data-testid="avatar-panel" style={panel}>
           <b style={{ color: theme.gold }}>Avatar</b>
-          <span style={{ fontSize: 11 }}>Stylized mannequin. Not a scan of a real person. Applies immediately on this device.</span>
+          <span style={{ fontSize: 11 }}>Stylized figure. Not a scan of a real person. Applies immediately on this device.</span>
           <label>Skin
             <select data-testid="avatar-skin" style={{ ...field, width: '100%' }} value={props.avatar.skin} onChange={(e) => props.onAvatar({ ...props.avatar, skin: Number(e.target.value) })}>
               {SKIN_TONES.map((color, index) => <option key={color} value={index}>Tone {index + 1}</option>)}

@@ -1,31 +1,52 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import { Text } from '@react-three/drei';
-import type { MeshStandardMaterial } from 'three';
+import { DoubleSide, type MeshStandardMaterial } from 'three';
 import type { Storefront } from '../lib/district';
 import { GOLDEN_HOUR_ID } from '../lib/shops';
-import { makeArchGeometry } from '../lib/storefrontGeo';
 import { ensureUv2, type PlazaMaterials } from '../lib/pbr';
 import { lodLevel, type QualitySettings } from '../lib/quality';
+import { axleCylinder, makeArchSlab } from '../lib/smoothGeo';
+import { makeArchGeometry } from '../lib/storefrontGeo';
 import { theme } from '../lib/theme';
+import { SmoothBox } from './SmoothBox';
 
-function UvBox({
-  args,
-  children,
-  ...rest
+function filletFor(quality: QualitySettings) {
+  if (quality.id === 'high') return 3;
+  if (quality.id === 'medium') return 2;
+  return 1;
+}
+
+function BayAwning({
+  width,
+  y,
+  color,
+  material,
+  segments,
 }: {
-  args: [number, number, number];
-  children?: ReactNode;
-  position?: [number, number, number];
-  rotation?: [number, number, number];
+  width: number;
+  y: number;
+  color: string;
   material?: MeshStandardMaterial;
-  castShadow?: boolean;
-  receiveShadow?: boolean;
+  segments: number;
 }) {
+  const bays = 3;
+  const bay = width / bays;
+  const radius = 0.58;
   return (
-    <mesh {...rest}>
-      <boxGeometry args={args} onUpdate={(g) => ensureUv2(g)} />
-      {children}
-    </mesh>
+    <group position={[0, y, 0.06]}>
+      {Array.from({ length: bays }, (_, i) => (
+        <mesh
+          key={i}
+          position={[(i - (bays - 1) / 2) * bay, 0, 0]}
+          rotation={[0, 0, Math.PI / 2]}
+          castShadow
+          material={material}
+        >
+          <cylinderGeometry args={[radius, radius, bay * 0.96, segments, 1, true, Math.PI * 1.5, Math.PI / 2]} />
+          {!material && <meshStandardMaterial color={color} roughness={0.55} side={DoubleSide} />}
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -44,123 +65,150 @@ export function StorefrontMesh({
 }) {
   const dist = Math.hypot(player.x - store.x, player.z - store.z);
   const lod = lodLevel(dist, quality);
-  const body = mats[store.material] as MeshStandardMaterial;
-  const windowColor = hot ? theme.icyPink : theme.blush;
-  const useArch = (store.id === GOLDEN_HOUR_ID || store.id === 'members') && lod !== 'far';
-  const arch = useMemo(() => {
-    if (!useArch) return null;
-    const geo = makeArchGeometry(store.w * 0.52, store.h * 0.58, 0.18);
-    ensureUv2(geo);
-    return geo;
-  }, [useArch, store.w, store.h]);
   const near = lod === 'near';
   const mid = lod !== 'far';
+  const fillet = filletFor(quality);
+  const body = mats[store.material] as MeshStandardMaterial;
+  const windowColor = hot ? theme.icyPink : theme.blush;
+  const velvetAwning = store.id === GOLDEN_HOUR_ID || store.id === 'members';
+  const lowerH = store.h * 0.6;
+  const upperH = store.h * 0.32;
+  const upperW = store.w * 0.9;
+  const upperD = store.d * 0.76;
+  const massZ = -store.d / 2;
+  const upperZ = massZ - 0.16;
+  const top = lowerH + upperH;
+  const doorX = store.w * 0.28;
+
+  const arch = useMemo(() => {
+    if (!mid) return null;
+    const geo = makeArchGeometry(store.w * 0.4, 2.15, 0.1);
+    ensureUv2(geo);
+    return geo;
+  }, [mid, store.w]);
+  const glow = useMemo(() => makeArchSlab(store.w * 0.3, 1.85, 0.04), [store.w]);
+  const door = useMemo(() => makeArchSlab(0.86, 2.2, 0.08), []);
+  const roof = useMemo(() => {
+    if (!mid) return null;
+    const segs = quality.id === 'low' ? 8 : quality.id === 'medium' ? 12 : 16;
+    return axleCylinder(upperW * 1.02, Math.min(1.15, upperD * 0.5), segs);
+  }, [mid, upperW, upperD, quality.id]);
+  useMemo(() => {
+    if (velvetAwning) mats.velvet.side = DoubleSide;
+    return null;
+  }, [velvetAwning, mats.velvet]);
 
   return (
     <group position={[store.x, 0, store.z]} rotation={[0, store.rotY, 0]}>
-      <UvBox args={[store.w, store.h, store.d]} position={[0, store.h / 2, -store.d / 2]} material={body} castShadow receiveShadow />
-      {/* Plinth */}
-      <UvBox args={[store.w + 0.22, 0.28, store.d + 0.16]} position={[0, 0.14, -store.d / 2 + 0.02]} material={mats.stone} castShadow receiveShadow />
-      {/* Pilasters */}
+      <SmoothBox size={[store.w, lowerH, store.d]} radius={0.36} segments={fillet} position={[0, lowerH / 2, massZ]} material={body} castShadow receiveShadow />
+      <SmoothBox size={[upperW, upperH, upperD]} radius={0.24} segments={fillet} position={[0, lowerH + upperH / 2, upperZ]} material={body} castShadow receiveShadow />
+      <SmoothBox size={[store.w + 0.2, 0.28, store.d + 0.14]} radius={0.06} segments={Math.max(1, fillet - 1)} position={[0, 0.14, massZ + 0.02]} material={mats.stone} castShadow receiveShadow />
+
+      {roof && (
+        <mesh geometry={roof} position={[0, top + 0.2, upperZ]} castShadow>
+          <meshStandardMaterial color="#121018" metalness={0.64} roughness={0.28} envMapIntensity={1} />
+        </mesh>
+      )}
+      <SmoothBox size={[store.w + 0.22, 0.1, 0.36]} radius={0.04} segments={Math.max(1, fillet - 1)} position={[0, lowerH + 0.02, 0.06]} castShadow color={theme.gold} metalness={0.78} roughness={0.28} />
+
       {mid && (
         <>
-          <UvBox args={[0.2, store.h - 0.1, 0.22]} position={[-store.w / 2 + 0.08, store.h / 2, 0.02]} material={mats.stone} castShadow />
-          <UvBox args={[0.2, store.h - 0.1, 0.22]} position={[store.w / 2 - 0.08, store.h / 2, 0.02]} material={mats.stone} castShadow />
+          {[-1, 1].map((side) => (
+            <group key={side} position={[side * (store.w / 2 - 0.12), 0, 0.06]}>
+              <mesh position={[0, lowerH * 0.52, 0]} castShadow>
+                <cylinderGeometry args={[0.09, 0.11, lowerH * 0.92, quality.id === 'low' ? 8 : 12]} />
+                <meshStandardMaterial color="#6e6860" roughness={0.72} metalness={0.08} />
+              </mesh>
+              <mesh position={[0, lowerH * 0.98, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[0.12, 0.035, 8, 14]} />
+                <meshStandardMaterial color={theme.gold} metalness={0.8} roughness={0.26} />
+              </mesh>
+            </group>
+          ))}
+          {mid && (
+            <BayAwning
+              width={store.w * 0.86}
+              y={lowerH * 0.72}
+              color={store.awningColor}
+              material={velvetAwning ? mats.velvet : undefined}
+              segments={quality.id === 'low' ? 8 : 12}
+            />
+          )}
         </>
       )}
-      {/* Cornice + parapet */}
-      <UvBox args={[store.w + 0.3, 0.16, 0.55]} position={[0, store.h + 0.08, 0.08]} castShadow>
-        <meshStandardMaterial color={theme.gold} metalness={0.74} roughness={0.3} envMapIntensity={1} />
-      </UvBox>
-      {mid && <UvBox args={[store.w + 0.08, 0.42, 0.22]} position={[0, store.h + 0.34, -0.06]} material={body} castShadow />}
-      {near && Array.from({ length: 7 }, (_, i) => (
-        <mesh key={`dentil-${i}`} position={[-store.w * 0.38 + i * (store.w * 0.13), store.h + 0.2, 0.22]} castShadow>
-          <boxGeometry args={[0.08, 0.1, 0.08]} />
-          <meshStandardMaterial color={theme.goldTrim} metalness={0.7} roughness={0.32} />
-        </mesh>
-      ))}
-      {/* Awning */}
-      {mid && (
-        <>
-          <UvBox args={[store.w * 0.92, 0.06, 1.15]} position={[0, store.h * 0.62, 0.62]} rotation={[-0.28, 0, 0]} material={store.id === GOLDEN_HOUR_ID || store.id === 'members' ? mats.velvet : undefined} castShadow>
-            {store.id !== GOLDEN_HOUR_ID && store.id !== 'members' && <meshStandardMaterial color={store.awningColor} roughness={0.7} />}
-          </UvBox>
-          <UvBox args={[store.w * 0.92, 0.22, 0.06]} position={[0, store.h * 0.62 - 0.18, 1.05]} castShadow>
-            <meshStandardMaterial color={store.awningColor} roughness={0.65} />
-          </UvBox>
-        </>
-      )}
-      {/* Window */}
-      {useArch && arch ? (
-        <mesh position={[-store.w * 0.14, 0.28, 0.1]} material={mats.gold} castShadow>
-          <primitive object={arch} attach="geometry" />
-        </mesh>
+
+      {arch ? (
+        <mesh position={[-store.w * 0.16, 0.42, 0.08]} material={mats.gold} geometry={arch} castShadow />
       ) : (
-        <UvBox args={[store.w * 0.44, store.h * 0.44, 0.08]} position={[-store.w * 0.18, store.h * 0.42, 0.08]} material={mats.gold} castShadow />
+        <SmoothBox size={[store.w * 0.36, 1.5, 0.08]} radius={0.08} segments={fillet} position={[-store.w * 0.16, 1.25, 0.08]} material={mats.gold} />
       )}
-      <mesh position={[-store.w * 0.18, store.h * 0.42, -0.18]}>
-        <planeGeometry args={[store.w * 0.38, store.h * 0.38]} />
-        <meshStandardMaterial color="#1a120e" emissive={windowColor} emissiveIntensity={hot ? 0.75 : 0.4} />
+      <mesh geometry={glow} position={[-store.w * 0.16, 0.55, 0.05]}>
+        <meshStandardMaterial color="#c8b4ae" emissive={windowColor} emissiveIntensity={hot ? 0.8 : 0.42} metalness={0.35} roughness={0.16} transparent opacity={0.78} />
       </mesh>
       {near && (
         <>
-          <mesh position={[-store.w * 0.18, store.h * 0.42, 0.09]} material={mats.glass}>
-            <boxGeometry args={[store.w * 0.36, store.h * 0.36, 0.02]} />
+          <mesh position={[-store.w * 0.16, 1.45, 0.1]} material={mats.glass}>
+            <circleGeometry args={[0.22, 16]} />
           </mesh>
-          {/* Mullions */}
-          <mesh position={[-store.w * 0.18, store.h * 0.42, 0.12]}>
-            <boxGeometry args={[0.03, store.h * 0.36, 0.03]} />
-            <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
+          <mesh position={[-store.w * 0.16, 1.35, 0.12]}>
+            <cylinderGeometry args={[0.015, 0.015, 1.25, 6]} />
+            <meshStandardMaterial color={theme.gold} metalness={0.75} roughness={0.3} />
           </mesh>
-          <mesh position={[-store.w * 0.18, store.h * 0.42, 0.12]}>
-            <boxGeometry args={[store.w * 0.36, 0.03, 0.03]} />
-            <meshStandardMaterial color={theme.gold} metalness={0.7} roughness={0.32} />
+          <mesh position={[-store.w * 0.16, 1.35, 0.12]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.015, 0.015, store.w * 0.28, 6]} />
+            <meshStandardMaterial color={theme.gold} metalness={0.75} roughness={0.3} />
           </mesh>
-          {/* Window display */}
-          <UvBox args={[0.18, 0.28, 0.12]} position={[-store.w * 0.26, 0.85, -0.05]} material={store.id === 'homogap' ? mats.velvet : mats.wood} />
-          <UvBox args={[0.16, 0.2, 0.1]} position={[-store.w * 0.1, 0.78, -0.05]} material={mats.gold} />
+          <mesh position={[-store.w * 0.24, 0.95, -0.02]} castShadow>
+            <cylinderGeometry args={[0.07, 0.09, 0.28, 10]} />
+            <meshStandardMaterial color={theme.gold} metalness={0.65} roughness={0.3} />
+          </mesh>
+          <mesh position={[-store.w * 0.24, 1.16, -0.02]}>
+            <sphereGeometry args={[0.07, 12, 10]} />
+            <meshStandardMaterial color={theme.blush} roughness={0.35} metalness={0.15} />
+          </mesh>
         </>
       )}
-      {/* Door */}
-      <UvBox args={[0.95, 2.35, 0.14]} position={[store.w * 0.28, 1.17, 0.1]} material={mats.ink} castShadow />
-      <UvBox args={[0.72, 2.08, 0.06]} position={[store.w * 0.28, 1.17, 0.16]} material={mats.wood} />
-      {mid && (
-        <mesh position={[store.w * 0.28, 2.32, 0.18]}>
-          <boxGeometry args={[0.62, 0.28, 0.04]} />
-          <meshStandardMaterial color="#1a120e" emissive={theme.gold} emissiveIntensity={0.2} />
-        </mesh>
-      )}
-      <mesh position={[store.w * 0.18, 1.2, 0.22]} castShadow>
-        <sphereGeometry args={[0.04, 10, 8]} />
-        <meshStandardMaterial color={theme.gold} metalness={0.9} roughness={0.22} />
+
+      <mesh geometry={door} position={[doorX, 0.02, 0.12]} material={mats.wood} castShadow />
+      <mesh position={[doorX - 0.28, 1.15, 0.18]}>
+        <sphereGeometry args={[0.035, 12, 10]} />
+        <meshStandardMaterial color={theme.gold} metalness={0.9} roughness={0.2} />
       </mesh>
-      {/* Sign band + hanging blade */}
-      <UvBox args={[store.w * 0.86, 0.42, 0.1]} position={[0, store.h * 0.86, 0.18]} material={mats.ink} castShadow />
-      <Text position={[0, store.h * 0.86, 0.26]} fontSize={0.2} color={store.signColor} anchorX="center" maxWidth={store.w * 0.8}>
+
+      <SmoothBox size={[store.w * 0.78, 0.34, 0.08]} radius={0.08} segments={fillet} position={[0, lowerH + 0.16, 0.16]} material={mats.ink} castShadow />
+      <Text position={[0, lowerH + 0.16, 0.24]} fontSize={0.18} color={store.signColor} anchorX="center" maxWidth={store.w * 0.74}>
         {store.name}
       </Text>
       {store.id === GOLDEN_HOUR_ID && (
-        <Text position={[0, store.h * 0.74, 0.26]} fontSize={0.14} color={theme.ivory} anchorX="center">
+        <Text position={[0, lowerH * 0.7 - 0.15, 0.42]} fontSize={0.11} color={theme.ivory} anchorX="center">
           DEMO SLOT · GOLDEN HOUR
         </Text>
       )}
+
       {near && (
-        <group position={[store.w * 0.48, store.h * 0.7, 0.35]}>
-          <mesh>
-            <boxGeometry args={[0.04, 0.5, 0.16]} />
-            <meshStandardMaterial color={theme.black} metalness={0.3} roughness={0.4} />
+        <group position={[store.w * 0.46, lowerH * 0.7, 0.55]}>
+          <mesh scale={[0.22, 0.62, 0.08]}>
+            <sphereGeometry args={[0.42, 16, 12]} />
+            <meshStandardMaterial color={theme.black} metalness={0.35} roughness={0.4} />
           </mesh>
-          <Text position={[0.05, 0, 0]} rotation={[0, Math.PI / 2, 0]} fontSize={0.11} color={theme.gold} anchorX="center" maxWidth={0.7}>
+          <Text position={[0.06, 0, 0]} rotation={[0, Math.PI / 2, 0]} fontSize={0.1} color={theme.gold} anchorX="center" maxWidth={0.7}>
             {store.id === GOLDEN_HOUR_ID ? 'GOLDEN HOUR' : store.name}
           </Text>
         </group>
       )}
+
       {near && (store.id === 'cafe' || store.id === GOLDEN_HOUR_ID) && (
-        <group position={[-store.w * 0.35, 0, 0.7]}>
-          <UvBox args={[0.32, 0.28, 0.32]} position={[0, 0.14, 0]} material={mats.stone} castShadow />
+        <group position={[-store.w * 0.38, 0, 0.85]}>
+          <mesh position={[0, 0.16, 0]} castShadow receiveShadow material={mats.stone}>
+            <cylinderGeometry args={[0.2, 0.16, 0.32, 12]} />
+          </mesh>
           <mesh position={[0, 0.42, 0]} castShadow>
-            <sphereGeometry args={[0.16, 12, 10]} />
-            <meshStandardMaterial color="#2a4a32" roughness={0.8} />
+            <sphereGeometry args={[0.2, 12, 10]} />
+            <meshStandardMaterial color="#234232" roughness={0.8} />
+          </mesh>
+          <mesh position={[0.12, 0.36, 0.08]} castShadow>
+            <sphereGeometry args={[0.12, 10, 8]} />
+            <meshStandardMaterial color="#2f5a40" roughness={0.82} />
           </mesh>
         </group>
       )}

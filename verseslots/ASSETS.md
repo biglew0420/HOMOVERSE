@@ -13,7 +13,7 @@ Photo textures and the dusk HDRI are CC0 from Poly Haven, compressed to 1K / 512
 | Granite Tile (color-tinted as black marble) | Poly Haven — Charlotte Baglioni | CC0 1.0 |
 | Dark Wooden Planks | Poly Haven — Amal Kumar | CC0 1.0 |
 | Velour Velvet | Poly Haven — photography by colormass, processing by Rico Cilliers | CC0 1.0 |
-| Storefronts, awnings, cornices, pilasters, door frames, fountain, lamps, trees, bench | Original geometry in `src/components/DistrictView.tsx`, `Storefront.tsx`, and `src/lib/storefrontGeo.ts` | Project code |
+| Storefronts, awnings, cornices, pilasters, arched doors, barrel roofs, sidewalk, curbs, parked cars, fountain, lamps, trees, bench | Original curved geometry in `src/components/DistrictView.tsx`, `Storefront.tsx`, `StreetDressing.tsx`, and `src/lib/smoothGeo.ts` | Project code |
 | Player and NPC bodies | Original stylized figures in `Avatar.tsx`, `Npc.tsx`, and `CharacterBits.tsx` | Project code |
 | Golden Hour symbols (gold H, crown, diamond, champagne) | Original height-field drawings in `src/components/slot/relief.ts` | Project code |
 | Sign type | `@react-three/drei` `Text` (troika), already a dependency | Package license |
@@ -22,4 +22,4 @@ Photo textures and the dusk HDRI are CC0 from Poly Haven, compressed to 1K / 512
 
 Poly Haven maps shipped as WebP (albedo at 1024, or 512 for the outer ground; normal and ARM packed maps at 512). KTX2 was skipped in this pass because a `toktx` toolchain was not available in the build environment; WebP keeps the payload near 1.1 MB plus a 1.5 MB HDRI.
 
-The look is a lit, textured dusk boutique with PBR maps, an HDRI, shadows, optional AO and bloom, and AgX or ACES tone mapping. It is still a stylized stage set, not photoreal and not GTA.
+The look is a lit dusk street: beveled façades, curved awnings, barrel roofs, a sidewalk and curb, parked cars, PBR maps, an HDRI, shadows, optional AO, bloom, vignette, and AgX or ACES tone mapping. It is still a stylized plaza, not a photoreal city and not GTA.

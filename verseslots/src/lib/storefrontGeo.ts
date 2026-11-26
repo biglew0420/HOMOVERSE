@@ -3,7 +3,7 @@ import { ExtrudeGeometry, Path, Shape } from 'three';
 /** Arched shopfront shell. Original geometry, not a scanned building. */
 export function makeArchGeometry(width: number, height: number, depth = 0.2): ExtrudeGeometry {
   const hw = width / 2;
-  const rise = height * 0.28;
+  const rise = height * 0.42;
   const spring = height - rise;
   const shape = new Shape();
   shape.moveTo(-hw, 0);

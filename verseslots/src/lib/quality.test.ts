@@ -28,9 +28,9 @@ describe('quality tiers', () => {
   it('turns off the heavy passes on Low and keeps High with AO, bloom, shadows, and the HDRI', () => {
     const high = qualitySettings('high', { devicePixelRatio: 2 });
     const low = qualitySettings('low', { devicePixelRatio: 3, userAgent: 'iPhone' });
-    expect(high.ao && high.bloom && high.env && high.shadows && high.softShadows).toBe(true);
+    expect(high.ao && high.bloom && high.env && high.shadows && high.softShadows && high.vignette && high.smaa).toBe(true);
     expect(high.toneMapping).toBe('agx');
-    expect(low.ao || low.bloom || low.env || low.shadows || low.dust).toBe(false);
+    expect(low.ao || low.bloom || low.env || low.shadows || low.dust || low.vignette || low.smaa).toBe(false);
     expect(low.dpr).toEqual([1, 1]);
     expect(lodLevel(3, high)).toBe('near');
     expect(lodLevel(12, high)).toBe('mid');
