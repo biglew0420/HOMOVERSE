@@ -21,7 +21,7 @@ const room: CSSProperties = {
   margin: 12,
   border: `1.5px solid ${theme.gold}`,
   boxShadow: `inset 0 0 0 1px ${theme.blush}55`,
-  borderRadius: 16,
+  borderRadius: 22,
   position: 'relative',
   overflow: 'hidden',
   display: 'flex',
@@ -133,11 +133,11 @@ export function Interior({
       <div style={room}>
         <Floor color={roomCopy.floor} tex={shopId === 'members' ? 'tex/velvet_diff.webp' : 'tex/wood_diff.webp'} />
         <div aria-hidden style={{ position: 'absolute', inset: 16, border: `1px solid ${theme.gold}55`, borderRadius: 12, pointerEvents: 'none', boxShadow: `inset 0 0 60px ${theme.mauve}33` }} />
-        {shopId === 'tailor' && <div aria-hidden style={{ position: 'absolute', right: 28, top: 28, width: 70, height: 120, border: `2px solid ${theme.gold}`, background: '#2a2420aa' }} />}
+        {shopId === 'tailor' && <div aria-hidden style={{ position: 'absolute', right: 28, top: 28, width: 70, height: 120, border: `2px solid ${theme.gold}`, borderRadius: '70px 70px 10px 10px', background: '#2a2420aa' }} />}
         {shopId === 'cafe' && <div aria-hidden style={{ position: 'absolute', left: 24, bottom: 90, width: 80, height: 36, borderRadius: 18, background: theme.coolRose, opacity: 0.45 }} />}
-        {shopId === 'members' && <div aria-hidden style={{ position: 'absolute', left: 30, top: 40, width: 90, height: 50, background: theme.velvet, border: `1px solid ${theme.gold}` }} />}
-        {shopId === 'homogap' && <div aria-hidden style={{ position: 'absolute', right: 24, top: 36, width: 64, height: 80, background: theme.charcoal, border: `1px solid ${theme.gold}` }} />}
-        {shopId === 'golden' && <div aria-hidden style={{ position: 'absolute', left: '50%', top: 36, transform: 'translateX(-50%)', width: 90, height: 110, background: theme.ink, border: `2px solid ${theme.gold}`, borderRadius: 8, boxShadow: `0 0 24px ${theme.gold}55` }} />}
+        {shopId === 'members' && <div aria-hidden style={{ position: 'absolute', left: 30, top: 40, width: 90, height: 50, borderRadius: 16, background: theme.velvet, border: `1px solid ${theme.gold}` }} />}
+        {shopId === 'homogap' && <div aria-hidden style={{ position: 'absolute', right: 24, top: 36, width: 64, height: 80, borderRadius: 18, background: theme.charcoal, border: `1px solid ${theme.gold}` }} />}
+        {shopId === 'golden' && <div aria-hidden style={{ position: 'absolute', left: '50%', top: 36, transform: 'translateX(-50%)', width: 90, height: 110, background: theme.ink, border: `2px solid ${theme.gold}`, borderRadius: '46px 46px 12px 12px', boxShadow: `0 0 24px ${theme.gold}55` }} />}
         <p style={{ position: 'relative', margin: 0, maxWidth: 560 }}>{roomCopy.mood}</p>
         <p style={{ position: 'relative', margin: 0, maxWidth: 560, opacity: 0.9 }}>{roomCopy.detail}</p>
         {shopId === 'members' && <p style={{ position: 'relative', margin: 0 }}>{NPC_META.simon.name}: “{NPC_LINES.simon[0]}”</p>}

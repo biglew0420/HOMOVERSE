@@ -152,7 +152,7 @@ export function buildDistrict(seed: string, publicName: string): District {
   const trees: TreeSpot[] = [];
   for (let i = 0; i < PAD_COUNT; i++) {
     const angle = ((i + 0.5) / PAD_COUNT) * Math.PI * 2;
-    const radius = 13.4 + rand() * 0.5;
+    const radius = 13.8 + rand() * 0.4;
     trees.push({
       x: Math.sin(angle) * radius,
       z: Math.cos(angle) * radius,

@@ -28,7 +28,7 @@ Open the URL Vite prints (usually `http://localhost:5173`). Optional Liveblocks 
 - Enterable shops: Golden Hour Lounge (demo slot inside), The Tailor, The Café, Members' Lounge (home of **Homo Bingo**), and homoGAP (link to the real merch shop, new tab). Other façades are window-shopping only.
 - Laurent greets at the Golden Hour door, Jules Wren keeps the Tailor, Wes Holloway sits the plaza bench. Thought bubbles are light and not about money.
 - **User** holds your local name, avatar shortcut, demo balance, mute, and the read-only HOMOV tools (Connect wallet, or paste an address / basename). A pasted address is a preview; use **Prove wallet** (a free `personal_sign`, no gas) or connect the matching wallet to wear the badge and enter the Members' Booth. Accounts coming soon.
-- **Quality** is High, Medium, or Low. High uses the dusk HDRI, shadows, SSAO, bloom, and AgX tone mapping. Medium keeps the HDRI, shadows, and a lighter bloom. Low caps DPR at 1 and drops the heavy passes so mid-range phones can stay near 30 fps. The app picks a default from device memory and whether you are on a phone; you can change it any time. It is remembered on this device.
+- **Quality** is High, Medium, or Low. High uses the dusk HDRI, shadows, SSAO, bloom, a vignette, and AgX tone mapping (SMAA on desktop). Medium keeps the HDRI, shadows, bloom, and vignette. Low caps DPR at 1 and drops the heavy passes so mid-range phones can stay near 30 fps. The app picks a default from device memory and whether you are on a phone; you can change it any time. It is remembered on this device. Façades stay curved on every tier; Low uses a coarser fillet.
 - **Use my location** is optional and never required for walking, interiors, or the demo slot.
 - **Reset local demo** clears the saved avatar, layout, name, and demo-credit balance on this device. Mute is kept.
 
@@ -53,7 +53,7 @@ Each daub spends one **demo HOMOV dauber**, shown as a gold HOMOV coin stamp. Yo
 
 ## Quality limits
 
-This is a stylized boutique evening, not photoreal architecture and not a GTA-like city. Storefronts use CC0 PBR maps from Poly Haven (see `ASSETS.md`) with gold trim, pilasters, cornices, awnings, and lit glass, plus distance LOD. Interiors are stylized rooms with tiled floors, not scanned spaces. A dusk HDRI (Joburg Central Sunset) lights the plaza on High and Medium, with fog, shadows, optional AO and bloom, and AgX or ACES tone mapping. Characters are still mannequins with better heads, collars, and Laurent's gold H pin — not photogrammetry. Fallback procedural canvases load if a texture fails. The look is closer to a lit stage set than a photograph.
+This is a stylized boutique evening on a small plaza, not photoreal architecture and not a GTA-scale city. Storefronts use CC0 PBR maps from Poly Haven (see `ASSETS.md`) with gold trim, round pilasters, curved awnings, arched doors, and barrel or parapet roofs, plus distance LOD. A stone sidewalk, curb, and a few parked cars sit outside the walk ring. Interiors are stylized rooms with tiled floors, not scanned spaces. A dusk HDRI (Joburg Central Sunset) lights the plaza on High and Medium, with fog, shadows, optional AO, bloom, and vignette, and AgX or ACES tone mapping. High on a desktop also runs SMAA. Characters are stylized figures with simple faces, hair, and a walk cycle — not photogrammetry. Fallback procedural canvases load if a texture fails. Low drops the heavy passes so a phone can stay playable. The look is closer to a lit street set than a photograph.
 
 ## Safeguards
 

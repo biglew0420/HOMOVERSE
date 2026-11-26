@@ -102,8 +102,8 @@ function Figure({
       )}
       <Head skin="#c9a07a" y={sitting ? 1.18 : 1.58} />
       {apron && (
-        <mesh position={[0, 0.95, 0.14]} castShadow>
-          <boxGeometry args={[0.32, 0.4, 0.04]} />
+        <mesh position={[0, 0.95, 0.16]} scale={[1.05, 1.25, 0.18]} castShadow>
+          <sphereGeometry args={[0.16, 12, 10]} />
           <meshStandardMaterial color={theme.ivory} roughness={0.7} />
         </mesh>
       )}
@@ -147,8 +147,8 @@ export function NpcFigures({
   const wesLine = useCycle('wes', nearW);
   const shownLaurent = nearL && rank !== 'guest' ? RANK_GREETINGS[rank] : laurentLine;
 
-  const laurentRot = golden ? golden.rotY + Math.PI : 0;
-  const julesRot = tailor ? tailor.rotY + Math.PI : 0;
+  const laurentRot = golden ? golden.rotY : 0;
+  const julesRot = tailor ? tailor.rotY : 0;
 
   return (
     <group>
